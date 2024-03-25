@@ -61,6 +61,24 @@ pip install ./mace_hessian
 
 ## Usage
 
+### General usage
+The general usage is the same as [MACE](https://github.com/ACEsuit/mace) from the 15.03.2024.
+
+### How to obtain a hessian
+To obtain the hessian the following commands can be use:
+```py
+from mace.calculators import mace_mp
+from ase import build
+
+atoms = build.molecule('H2O')
+calc = mace_mp(model="medium", dispersion=False, default_dtype="float64",device='cuda', )#device='cpu')
+atoms.calc = calc
+hessian=calc.get_hessian(atoms=atoms)
+print("h:",hessian)
+```
+A [file](https://github.com/Nilsgoe/mace_hessian/tree/main/tests/test_mace_hessian.py) for a larger test and a comparison with numerical derivatives is also provided.
+
+
 ### Training - should be the same as MACE but hasn't been tested!
 
 To train a MACE model, you can use the `mace_run_train` script, which should be in the usual place that pip places binaries (or you can explicitly run `python3 <path_to_cloned_dir>/mace/cli/run_train.py`)
@@ -100,7 +118,7 @@ The precision can be changed using the keyword `--default_dtype`, the default is
 The keywords `--batch_size` and `--max_num_epochs` should be adapted based on the size of the training set. The batch size should be increased when the number of training data increases, and the number of epochs should be decreased. An heuristic for initial settings, is to consider the number of gradient update constant to 200 000, which can be computed as $\text{max-num-epochs}*\frac{\text{num-configs-training}}{\text{batch-size}}$.
 
 The code can handle training set with heterogeneous labels, for example containing both bulk structures with stress and isolated molecules. In this example, to make the code ignore stress on molecules, append to your molecules configuration a `config_stress_weight = 0.0`.
-
+'''
 To use Apple Silicon GPU acceleration make sure to install the latest PyTorch version and specify `--device=mps`.
 
 ### Evaluation
@@ -113,7 +131,7 @@ mace_eval_configs \
     --model="your_model.model" \
     --output="./your_output.xyz"
 ```
-
+'''
 ## Tutorial
 
 
@@ -126,10 +144,7 @@ We have collaborated with the Materials Project (MP) to train a universal MACE p
 The models are releaed on GitHub at https://github.com/ACEsuit/mace-mp.
 If you use them please cite [our paper](https://arxiv.org/abs/2401.00096) which also contains an large range of example applications and benchmarks.
 
-#### Example usage in ASE
-```py
-from mace.calculators import mace_mp
-from ase import build
+#### Example usage in ASE'''
 
 atoms = build.molecule('H2O')
 calc = mace_mp(model="medium", dispersion=False, default_dtype="float32", device='cuda')
