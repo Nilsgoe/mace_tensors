@@ -13,6 +13,8 @@
 - [Development - based on the [MACE](https://github.com/ACEsuit/mace) code](#documentation)
 - [Installation MACE_HESSIAN](#installation)
 - [Usage](#usage)
+  - [General Usage](#general-usage)
+  - [How to Obtain a Hessian](#how-to-obtain-a-hessian)
   - [Training](#training)
   - [Evaluation](#evaluation)
 - [Tutorial](#tutorial)
@@ -61,10 +63,10 @@ pip install ./mace_hessian
 
 ## Usage
 
-### General usage
+### General Usage
 The general usage is the same as [MACE](https://github.com/ACEsuit/mace) from the 15.03.2024.
 
-### How to obtain a hessian
+### How to Obtain a Hessian
 To obtain the hessian the following commands can be use:
 ```py
 from mace.calculators import mace_mp
@@ -79,7 +81,7 @@ print("h:",hessian)
 A [file](https://github.com/Nilsgoe/mace_hessian/tree/main/tests/test_mace_hessian.py) for a larger test and a comparison with numerical derivatives is also provided.
 
 
-### Training - should be the same as MACE but hasn't been tested!
+### Training
 
 To train a MACE model, you can use the `mace_run_train` script, which should be in the usual place that pip places binaries (or you can explicitly run `python3 <path_to_cloned_dir>/mace/cli/run_train.py`)
 
