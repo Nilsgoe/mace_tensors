@@ -220,7 +220,7 @@ def print_git_commit():
 
 
 def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
-    if model.__class__.__name__ != "ScaleShiftMACE":
+    if model.__class__.__name__ not in ["ScaleShiftMACE", "AtomicDielectricMACE"]:#!= "ScaleShiftMACE":
         return {"error": "Model is not a ScaleShiftMACE model"}
 
     def radial_to_name(radial_type):
@@ -297,6 +297,12 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         "atomic_inter_shift": shift.cpu().numpy(),
         "heads": heads,
     }
+    
+    if model.__class__.__name__ == "AtomicDielectricMACE":
+        config["use_polarizability"] = model.use_polarizability
+        config["only_dipole"] =True# model.only_dipole
+        config["gate"] = torch.nn.functional.silu
+        
     return config
 
 
@@ -601,11 +607,23 @@ def get_loss_fn(
             forces_weight=args.forces_weight,
         )
     elif args.loss == "dipole":
+        #print("The dipole is:",dipole_only)
+        #exit()
         assert (
             dipole_only is True
         ), "dipole loss can only be used with AtomicDipolesMACE model"
         loss_fn = modules.DipoleSingleLoss(
             dipole_weight=args.dipole_weight,
+        )
+    elif args.loss == "dipole_polar":
+        #print("The dipole is:",dipole_only)
+        #exit()
+        assert (
+            dipole_only is True
+        ), "dipole_polar loss can only be used with AtomicDielectricMACE model"
+        loss_fn = modules.DipolePolarLoss(
+            dipole_weight=args.dipole_weight,
+            polarizability_weight=args.polarizability_weight,
         )
     elif args.loss == "energy_forces_dipole":
         assert dipole_only is False and compute_dipole is True

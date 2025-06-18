@@ -49,7 +49,8 @@ def update_keyspec_from_kwargs(
     keyspec: KeySpecification, keydict: Dict[str, str]
 ) -> KeySpecification:
     # convert command line style property_key arguments into a keyspec
-    infos = ["energy_key", "stress_key", "virials_key", "dipole_key", "head_key"]
+    infos = ["energy_key", "stress_key", "virials_key", "dipole_key","polarizability_key", "head_key"]
+    print("Using keyspec with keys:", infos)
     arrays = ["forces_key", "charges_key"]
     info_keys = {}
     arrays_keys = {}
@@ -343,6 +344,7 @@ def save_AtomicData_to_HDF5(data, i, h5_file) -> None:
     grp["stress"] = data.stress
     grp["virials"] = data.virials
     grp["dipole"] = data.dipole
+    grp["polarizability"] = data.polarizability
     grp["charges"] = data.charges
     grp["head"] = data.head
 

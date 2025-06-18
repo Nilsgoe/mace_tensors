@@ -3,6 +3,9 @@
 # Authors: Ilyes Batatia, Gregor Simm, David Kovacs
 # This program is distributed under the MIT License (see MIT.md)
 ###########################################################################################
+import warnings
+
+
 
 import ast
 import glob
@@ -220,7 +223,6 @@ def run(args) -> None:
         args.heads["pt_head"] = prepare_pt_head(
             args, pt_keyspec, foundation_model_avg_num_neighbors
         )
-
     logging.info("===========LOADING INPUT DATA===========")
     heads = list(args.heads.keys())
     logging.info(f"Using heads: {heads}")
@@ -466,7 +468,21 @@ def run(args) -> None:
         atomic_energies = None
         dipole_only = True
         args.compute_dipole = True
+        #print("\nDipole:",dipole_only, args.compute_dipole,"\n")
+        #exit()
+        args.compute_polarizability = False
         args.compute_energy = False
+        args.compute_forces = False
+        args.compute_virials = False
+        args.compute_stress = False
+    elif args.model == "AtomicDielectricMACE":
+        atomic_energies = None
+        dipole_only = True
+        args.compute_dipole = True
+        #print("\nDipole:",dipole_only, args.compute_dipole,"\n")
+        #exit()
+        args.compute_energy = False
+        args.compute_polarizability = True
         args.compute_forces = False
         args.compute_virials = False
         args.compute_stress = False
@@ -474,6 +490,7 @@ def run(args) -> None:
         dipole_only = False
         if args.model == "EnergyDipolesMACE":
             args.compute_dipole = True
+            args.compute_polarizability = False
             args.compute_energy = True
             args.compute_forces = True
             args.compute_virials = False
@@ -651,6 +668,7 @@ def run(args) -> None:
     logging.info(f"Total number of parameters: {tools.count_parameters(model)}")
     logging.info("")
     logging.info("===========OPTIMIZER INFORMATION===========")
+    #warnings.simplefilter("error", UserWarning)
     logging.info(f"Using {args.optimizer.upper()} as parameter optimizer")
     logging.info(f"Batch size: {args.batch_size}")
     if args.ema:

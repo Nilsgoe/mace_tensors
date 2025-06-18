@@ -15,6 +15,7 @@ from scipy.constants import c, e
 from mace.tools import to_numpy
 from mace.tools.scatter import scatter_mean, scatter_std, scatter_sum
 from mace.tools.torch_geometric.batch import Batch
+from mace.tools.compile import simplify_if_compile
 
 from .blocks import AtomicEnergiesBlock
 
@@ -488,6 +489,51 @@ def compute_fixed_charge_dipole(
     return scatter_sum(
         src=mu, index=batch.unsqueeze(-1), dim=0, dim_size=num_graphs
     )  # [N_graphs,3]
+
+@torch.jit.ignore
+def compute_dielectric_gradients(
+    dielectric: torch.Tensor,
+    positions: torch.Tensor,
+) -> Tuple[torch.tensor, torch.tensor]:
+    dielectric_flatten = dielectric.view(-1)
+
+    def get_vjp(v):
+        return torch.autograd.grad(
+            dielectric_flatten,
+            positions,
+            v,
+            retain_graph=True,
+            create_graph=True,
+            allow_unused=False,
+        )
+
+    try:
+        I_N = torch.eye(dielectric.shape[-1]).to(dielectric.device)
+        gradient = torch.vmap(get_vjp, in_dims=0, out_dims=0)(I_N)[0]
+    except RuntimeError:
+        gradient = compute_dielectric_gradients_loop(dielectric, positions).detach()
+    if gradient is None:
+        return torch.zeros((positions.shape[0], dielectric.shape[-1], 3))
+    return gradient
+
+
+def compute_dielectric_gradients_loop(
+    dielectric: torch.Tensor,
+    positions: torch.Tensor,
+) -> torch.Tensor:
+    gradients = []
+    for i in range(dielectric.shape[-1]):
+        grad_elem = dielectric[:, i]
+        hess_row = torch.autograd.grad(
+            grad_elem,
+            positions,
+            retain_graph=True,
+            create_graph=True,
+            allow_unused=False,
+        )[0]
+        gradients.append(hess_row)
+    gradients = torch.stack(gradients)
+    return gradients
 
 
 class InteractionKwargs(NamedTuple):

@@ -21,6 +21,7 @@ from .blocks import (
 )
 from .loss import (
     DipoleSingleLoss,
+    DipolePolarLoss,
     UniversalLoss,
     WeightedEnergyForcesDipoleLoss,
     WeightedEnergyForcesL1L2Loss,
@@ -30,11 +31,12 @@ from .loss import (
     WeightedForcesLoss,
     WeightedHuberEnergyForcesStressLoss,
 )
-from .models import MACE, AtomicDipolesMACE, EnergyDipolesMACE, ScaleShiftMACE
+from .models import MACE, AtomicDipolesMACE, AtomicDielectricMACE, EnergyDipolesMACE, ScaleShiftMACE
 from .radial import BesselBasis, GaussianBasis, PolynomialCutoff, ZBLBasis
 from .symmetric_contraction import SymmetricContraction
 from .utils import (
     compute_avg_num_neighbors,
+    compute_dielectric_gradients,
     compute_fixed_charge_dipole,
     compute_mean_rms_energy_forces,
     compute_mean_std_atomic_inter_energy,
@@ -81,6 +83,7 @@ __all__ = [
     "MACE",
     "ScaleShiftMACE",
     "AtomicDipolesMACE",
+    "AtomicDielectricMACE",
     "EnergyDipolesMACE",
     "WeightedEnergyForcesLoss",
     "WeightedForcesLoss",
@@ -95,6 +98,7 @@ __all__ = [
     "interaction_classes",
     "compute_mean_std_atomic_inter_energy",
     "compute_avg_num_neighbors",
+    "compute_dielectric_gradients",
     "compute_statistics",
     "compute_fixed_charge_dipole",
 ]

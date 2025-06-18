@@ -44,6 +44,8 @@ class LinearNodeEmbeddingBlock(torch.nn.Module):
         cueq_config: Optional[CuEquivarianceConfig] = None,
     ):
         super().__init__()
+        print("node_attr_irreps", irreps_in,"node_feats_irreps", irreps_out,
+              "cueq_config", cueq_config)
         self.linear = Linear(
             irreps_in=irreps_in, irreps_out=irreps_out, cueq_config=cueq_config
         )
@@ -117,14 +119,23 @@ class LinearDipoleReadoutBlock(torch.nn.Module):
         self,
         irreps_in: o3.Irreps,
         dipole_only: bool = False,
+        use_polarizability: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
         oeq_config: Optional[OEQConfig] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         if dipole_only:
             self.irreps_out = o3.Irreps("1x1o")
-        else:
+        elif use_polarizability==False:
             self.irreps_out = o3.Irreps("1x0e + 1x1o")
+        elif use_polarizability:
+            self.irreps_out = o3.Irreps("2x0e + 1x1o + 1x2e")
+        else:
+            raise ValueError(
+                "Invalid configuration for LinearDipoleReadoutBlock: "
+                "use_polarizability must be either True or False."
+            )
+        
         self.linear = Linear(
             irreps_in=irreps_in, irreps_out=self.irreps_out, cueq_config=cueq_config
         )
@@ -141,6 +152,7 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
         MLP_irreps: o3.Irreps,
         gate: Callable,
         dipole_only: bool = False,
+        use_polarizability: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
         oeq_config: Optional[OEQConfig] = None,  # pylint: disable=unused-argument
     ):
@@ -148,8 +160,15 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
         self.hidden_irreps = MLP_irreps
         if dipole_only:
             self.irreps_out = o3.Irreps("1x1o")
-        else:
+        elif use_polarizability==False:
             self.irreps_out = o3.Irreps("1x0e + 1x1o")
+        elif use_polarizability:    
+            self.irreps_out = o3.Irreps("2x0e + 1x1o + 1x2e")
+        else:   
+            raise ValueError(
+                "Invalid configuration for NonLinearDipoleReadoutBlock: "
+                "use_polarizability must be either True or False."
+            )
         irreps_scalars = o3.Irreps(
             [(mul, ir) for mul, ir in MLP_irreps if ir.l == 0 and ir in self.irreps_out]
         )
@@ -186,7 +205,6 @@ class AtomicEnergiesBlock(torch.nn.Module):
     def __init__(self, atomic_energies: Union[np.ndarray, torch.Tensor]):
         super().__init__()
         # assert len(atomic_energies.shape) == 1
-
         self.register_buffer(
             "atomic_energies",
             torch.tensor(atomic_energies, dtype=torch.get_default_dtype()),

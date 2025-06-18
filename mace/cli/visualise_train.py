@@ -78,6 +78,18 @@ error_type = {
         [("mae_mu", "MAE MU [mDebye]"), ("rel_mae_f", "Relative MU MAE [%]")],
         [("dipole", "Dipole per atom [Debye]")],
     ),
+    "DipolePolarRMSE": (
+        [
+            ("rmse_mu_per_atom", "RMSE MU/atom [mDebye]"),
+            ("rmse_alpha_per_atom", "RMSE ALPHA/atom [e/AA^3]"),
+            ("rel_rmse_f", "Relative MU RMSE [%]"),
+            ("rmse_polarizability_per_atom", "Relative ALPHA RMSE [%]"), #check that
+        ],
+        [
+            ("dipole", "Dipole per atom [Debye]"),
+            ("polarizability", "Polarizability per atom [AA^3]"),
+        ],
+    ),
     "EnergyDipoleRMSE": (
         [
             ("rmse_e_per_atom", "RMSE E/atom [meV]"),
