@@ -535,11 +535,11 @@ class DipolePolarLoss(torch.nn.Module):
     def forward(self, ref: Batch, pred: TensorDict, ddp: Optional[bool] = None
     ) -> torch.Tensor:
         loss_dipole = (
-            weighted_mean_squared_error_dipole(ref, pred, ddp) * 100.0
+            weighted_mean_squared_error_dipole(ref, pred, ddp) #* 100.0
         ) # scale adjustment
         
         loss_polarizability = (
-            weighted_mean_squared_error_polarizability(ref, pred, ddp) * 100.0
+            weighted_mean_squared_error_polarizability(ref, pred, ddp) #* 100.0
         )  # scale adjustment  
         return self.dipole_weight * loss_dipole + self.polarizability_weight * loss_polarizability
 

@@ -220,7 +220,7 @@ def print_git_commit():
 
 
 def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
-    if model.__class__.__name__ not in ["ScaleShiftMACE", "AtomicDielectricMACE"]:#!= "ScaleShiftMACE":
+    if model.__class__.__name__ != "ScaleShiftMACE": #not in ["ScaleShiftMACE", "AtomicDielectricMACE"]
         return {"error": "Model is not a ScaleShiftMACE model"}
 
     def radial_to_name(radial_type):
@@ -240,8 +240,8 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         if radial.distance_transform.__class__.__name__ == "SoftTransform":
             return "Soft"
         return radial.distance_transform.__class__.__name__
-
     scale = model.scale_shift.scale
+    print("\nIS DIPOLE ALSO here? ",scale,"\n")
     shift = model.scale_shift.shift
     heads = model.heads if hasattr(model, "heads") else ["default"]
     model_mlp_irreps = (
@@ -644,7 +644,8 @@ def get_swa(
     swas: List[bool],
     dipole_only: bool = False,
 ):
-    assert dipole_only is False, "Stage Two for dipole fitting not implemented"
+    print("\n \n \ndipoleonly is:",dipole_only)
+    #assert dipole_only is False, "Stage Two for dipole fitting not implemented"
     swas.append(True)
     if args.start_swa is None:
         args.start_swa = max(1, args.max_num_epochs // 4 * 3)
@@ -682,6 +683,14 @@ def get_swa(
         )
         logging.info(
             f"Stage Two (after {args.start_swa} epochs) with loss function: {loss_fn_energy}, with energy weight : {args.swa_energy_weight}, forces weight : {args.swa_forces_weight}, dipole weight : {args.swa_dipole_weight} and learning rate : {args.swa_lr}"
+        )
+    elif args.loss == "dipole_polar":
+        loss_fn_energy = modules.DipolePolarLoss(
+            dipole_weight=args.swa_dipole_weight,
+            polarizability_weight=args.swa_polarizability_weight,
+        )
+        logging.info(
+            f"Stage Two (after {args.start_swa} epochs) with loss function: {loss_fn_energy}, dipole weight : {args.swa_dipole_weight}, polarizability weight : {args.swa_polarizability_weight}, and learning rate : {args.swa_lr}"
         )
     elif args.loss == "universal":
         loss_fn_energy = modules.UniversalLoss(

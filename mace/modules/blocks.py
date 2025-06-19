@@ -124,7 +124,8 @@ class LinearDipoleReadoutBlock(torch.nn.Module):
         oeq_config: Optional[OEQConfig] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
-        if dipole_only:
+        #print("\n\n\nPolarizablity:", use_polarizability, "Dipole only:", dipole_only)
+        if dipole_only==True and use_polarizability==False:
             self.irreps_out = o3.Irreps("1x1o")
         elif use_polarizability==False:
             self.irreps_out = o3.Irreps("1x0e + 1x1o")
@@ -141,7 +142,10 @@ class LinearDipoleReadoutBlock(torch.nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # [n_nodes, irreps]  # [..., ]
-        return self.linear(x)  # [n_nodes, 1]
+        #print("LinearDipoleReadoutBlock: irreps_in", x.shape, "irreps_out", self.irreps_out)
+        y =  self.linear(x)  # [n_nodes, 1]
+        #print("LinearDipoleReadoutBlock: irreps_in", y.shape, "irreps_out", self.irreps_out)
+        return y  # [n_nodes, 1]
 
 
 @compile_mode("script")
@@ -157,8 +161,9 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
         oeq_config: Optional[OEQConfig] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
+        print("Polarizablity:", use_polarizability, "Dipole only:", dipole_only)
         self.hidden_irreps = MLP_irreps
-        if dipole_only:
+        if dipole_only==True and use_polarizability==False:
             self.irreps_out = o3.Irreps("1x1o")
         elif use_polarizability==False:
             self.irreps_out = o3.Irreps("1x0e + 1x1o")
@@ -192,9 +197,12 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
             irreps_out=self.irreps_out,
             cueq_config=cueq_config,
         )
+        #print("\n\n", "NonLinearDipoleReadoutBlock init: irreps_in", irreps_in, "irreps_out", self.irreps_out,)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # [n_nodes, irreps]  # [..., ]
+        #print("NonLinearDipoleReadoutBlock p1: irreps_in", x.shape, "irreps_out", self.irreps_out)
         x = self.equivariant_nonlin(self.linear_1(x))
+        #print("NonLinearDipoleReadoutBlock p2: irreps_in", x.shape, "irreps_out", self.irreps_out)
         return self.linear_2(x)  # [n_nodes, 1]
 
 

@@ -29,6 +29,7 @@ from .blocks import (
 from .utils import (
     compute_dielectric_gradients,
     compute_fixed_charge_dipole,
+    compute_fixed_charge_dipole_polar,
     get_atomic_virials_stresses,
     get_edge_vectors_and_lengths,
     get_outputs,
@@ -909,6 +910,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         data["node_attrs"].requires_grad_(True)
         data["positions"].requires_grad_(True)
         num_graphs = data["ptr"].numel() - 1
+        num_atoms = data["ptr"][1:] - data["ptr"][:-1]
 
         # Embeddings
         node_feats = self.node_embedding(data["node_attrs"])
@@ -937,28 +939,33 @@ class AtomicDielectricMACE(torch.nn.Module):
                 edge_index=data["edge_index"],
                 cutoff=cutoff,
             )
+            #print("node_feats shape: ", node_feats.shape)
             node_feats = product(
                 node_feats=node_feats,
                 sc=sc,
                 node_attrs=data["node_attrs"],
             )
+            #print("node_feats shape after product: ", node_feats.shape)
             node_out = readout(node_feats).squeeze(-1)  # [n_nodes,3]
             #print("node_out shape: ", node_out.shape)
-            #charges.append(node_out[:, 0])
-            print("node_out shape: ", node_out.shape)
+            charges.append(node_out[:, 0])
+            #print(charges)
+            #print(data["charges"])
+            #exit()
+            #print("node_out shape: ", node_out.shape)
             if True: #self.use_polarizability:
-                node_dipoles = node_out[:, 0:3]
+                node_dipoles = node_out[:, 1:4]
                 #print("node_out shape: ", node_out.shape)
                 #print(node_dipoles.shape)
                 #exit()
                 node_polarizability = torch.cat(
-                    (node_out[:, 1].unsqueeze(-1), node_out[:, 4:]), dim=-1
+                    (node_out[:, 1].unsqueeze(-1), node_out[:, 5:]), dim=-1
                 )
                 polarizabilities.append(node_polarizability)
                 dipoles.append(node_dipoles)
-                print("node_dipoles shape: ", node_dipoles.shape)
-                print("node_polarizability shape: ", node_polarizability.shape)
-                exit()
+                #print("node_dipoles shape: ", node_dipoles.shape)
+                #print("node_polarizability shape: ", node_polarizability.shape)
+                #exit()
             #if self.use_dipole and not self.use_polarizability:
             #    node_dipoles = node_out[:, 1:4]
             #    dipoles.append(node_dipoles)
@@ -970,15 +977,20 @@ class AtomicDielectricMACE(torch.nn.Module):
             dipoles, dim=-1
         )  # [n_nodes,3,n_contributions]
         atomic_dipoles = torch.sum(contributions_dipoles, dim=-1)  # [n_nodes,3]
-    
+        atomic_charges = torch.stack(charges, dim=-1).sum(-1)  # [n_nodes,]
+        # The idea is to normalize the charges so that they sum to the net charge in the system before predicting the dipole.
+        total_charge_excess = scatter_mean(
+            src=atomic_charges, index=data["batch"], dim_size=num_graphs
+        ) - (data["total_charge"] / num_atoms)
+        atomic_charges = atomic_charges - total_charge_excess[data["batch"]]
         total_dipole = scatter_sum(
             src=atomic_dipoles,
             index=data["batch"],
             dim=0,
             dim_size=num_graphs,
         )  # [n_graphs,3]
-        baseline = compute_fixed_charge_dipole(
-            charges=data["charges"],
+        baseline = compute_fixed_charge_dipole_polar(
+            charges=atomic_charges, #or data["charges"], ?????
             positions=data["positions"],
             batch=data["batch"],
             num_graphs=num_graphs,
@@ -1028,6 +1040,7 @@ class AtomicDielectricMACE(torch.nn.Module):
             dalpha_dr = None
 
         output = {
+            "charges": atomic_charges,
             "dipole": total_dipole,
             "atomic_dipoles": atomic_dipoles,
             "polarizability": total_polarizability,

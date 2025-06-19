@@ -911,6 +911,7 @@ def run(args) -> None:
             logging.info(f"Loaded Stage one model from epoch {epoch} for evaluation")
 
         if rank == 0:
+            print(f"\n Dipole is here \n")
             # Save entire model
             if swa_eval:
                 model_path = Path(args.checkpoints_dir) / (tag + "_stagetwo.model")
@@ -918,10 +919,12 @@ def run(args) -> None:
                 model_path = Path(args.checkpoints_dir) / (tag + ".model")
             logging.info(f"Saving model to {model_path}")
             model_to_save = deepcopy(model)
+            print(f"\n Dipole is here 1\n")
             if args.enable_cueq and not args.only_cueq:
                 print("RUNING CUEQ TO E3NN")
                 print("swa_eval", swa_eval)
                 model_to_save = run_cueq_to_e3nn(deepcopy(model), device=device)
+            print(f"\n Dipole is here 2\n")
             if args.save_cpu:
                 model_to_save = model_to_save.to("cpu")
             torch.save(model_to_save, model_path)
@@ -931,6 +934,7 @@ def run(args) -> None:
                     convert_to_json_format(extract_config_mace_model(model))
                 ),
             }
+            print(f"\n Dipole is here 3 \n")
             if swa_eval:
                 torch.save(
                     model_to_save, Path(args.model_dir) / (args.name + "_stagetwo.model")

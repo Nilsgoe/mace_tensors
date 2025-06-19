@@ -485,10 +485,22 @@ def compute_fixed_charge_dipole(
     batch: torch.Tensor,
     num_graphs: int,
 ) -> torch.Tensor:
-    mu = positions * charges.unsqueeze(-1) / (1e-11 / c / e)  # [N_atoms,3]
+    mu = positions * charges.unsqueeze(-1) / (1e-11 / c / e)  # [N_atoms,3] = 0.20819...
     return scatter_sum(
         src=mu, index=batch.unsqueeze(-1), dim=0, dim_size=num_graphs
     )  # [N_graphs,3]
+    
+def compute_fixed_charge_dipole_polar(
+    charges: torch.Tensor,
+    positions: torch.Tensor,
+    batch: torch.Tensor,
+    num_graphs: int,
+) -> torch.Tensor:
+    mu = positions * charges.unsqueeze(-1) #/ (1e-11 / c / e)  # [N_atoms,3] = 0.20819...
+    return scatter_sum(
+        src=mu, index=batch.unsqueeze(-1), dim=0, dim_size=num_graphs
+    )
+
 
 @torch.jit.ignore
 def compute_dielectric_gradients(

@@ -607,6 +607,14 @@ def build_default_arg_parser() -> argparse.ArgumentParser:
         dest="swa_dipole_weight",
     )
     parser.add_argument(
+        "--swa_polarizability_weight",
+        "--stage_two_polarizability_weight",
+        help="weight of polarizability after starting Stage Two (previously called swa)",
+        type=float,
+        default=1.0,
+        dest="swa_polarizability_weight",
+    )
+    parser.add_argument(
         "--polarizability_weight",
         help="weight of polarizability loss",
         type=float,
