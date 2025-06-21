@@ -640,6 +640,7 @@ class InferenceMetric(Metric):
         # Process dipoles
         if self.n_dipole:
             ref_d, pred_d = self._process_data(self.ref_dipole, self.pred_dipole)
+            print("\n \n REF DIPOLE", ref_d)
             ref_d_pa, pred_d_pa = self._process_data(
                 self.ref_dipole_per_atom, self.pred_dipole_per_atom
             )

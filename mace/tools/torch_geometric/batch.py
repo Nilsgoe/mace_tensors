@@ -133,7 +133,8 @@ class Batch(Data):
         batch.__cumsum__ = cumsum
         batch.__cat_dims__ = cat_dims
         batch.__num_nodes_list__ = num_nodes_list
-
+        #print("\n \n Is here the ref? \n \n", data_list[0],data_list[0]["dipole"])
+        #exit()
         ref_data = data_list[0]
         for key in batch.keys:
             items = batch[key]
