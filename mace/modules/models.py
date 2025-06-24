@@ -730,6 +730,7 @@ class AtomicDipolesMACE(torch.nn.Module):
             batch=data["batch"],
             num_graphs=num_graphs,
         )  # [n_graphs,3]
+        
         total_dipole = total_dipole + baseline
 
         output = {
@@ -880,6 +881,8 @@ class AtomicDielectricMACE(torch.nn.Module):
                         use_polarizability=True,
                     )
                 )
+                #print("Nonlinear irrpes: ", hidden_irreps_out, MLP_irreps)
+                #exit()
             else:
                 self.readouts.append(
                     LinearDipoleReadoutBlock(
@@ -901,6 +904,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         compute_dielectric_derivatives: bool = False,  # no training on derivatives
         compute_edge_forces: bool = False,  # pylint: disable=W0613
         compute_atomic_stresses: bool = False,  # pylint: disable=W0613
+        means_stds: Optional[Dict[str, torch.Tensor]] = None,  # pylint: disable=W0613
     ) -> Dict[str, Optional[torch.Tensor]]:
         assert compute_force is False
         assert compute_virials is False
@@ -1038,6 +1042,26 @@ class AtomicDielectricMACE(torch.nn.Module):
             total_polarizability = None
             total_polarizability_spherical = None
             dalpha_dr = None
+
+        # =====================
+        # Denormalization begins
+        # =====================
+        if self.means_stds is not None:
+            
+            total_dipole = total_dipole * self.means_stds["dipole_std"] + self.means_stds["dipole_mean"]
+            if dmu_dr is not None:
+                dmu_dr = dmu_dr * self.means_stds["dipole_std"].view(1, 1, 3)
+
+           
+            total_polarizability = total_polarizability * self.means_stds["polar_std"] + self.means_stds["polar_mean"]
+            if dalpha_dr is not None:
+                dalpha_dr = dalpha_dr * self.means_stds["polar_std"].view(1, 1, 9)
+
+            if hasattr(self, "std_polarizability_sh") and self.std_polarizability_sh is not None:
+                total_polarizability_spherical = (
+                    total_polarizability_spherical * self.means_stds["polar_std"] + self.means_stds["polar_mean"]
+            )
+
 
         output = {
             "charges": atomic_charges,

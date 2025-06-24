@@ -608,6 +608,7 @@ def run(args) -> None:
         dipoles_std  = dipoles.std(axis=0)
         polarizabilities_mean = polarizabilities.mean(axis=0)
         polarizabilities_std  = polarizabilities.std(axis=0)
+        means_std_dipole_polar={"dipole_mean": dipoles_mean, "dipole_std": dipoles_std, "polar_mean": polarizabilities_mean, "polar_std": polarizabilities_std}
         logging.info(f"Mean dipole: {dipoles_mean}, std: {dipoles_std}")
         logging.info(f"Mean polarizability: {polarizabilities_mean}, std: {polarizabilities_std}")
         for train_set in train_sets[head_config.head_name]:
@@ -616,13 +617,15 @@ def run(args) -> None:
             #print(train_set["dipole"])
             train_set["polarizability"] = (train_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
             #exit()
+        
+        '''
         for valid_set in valid_sets[head_config.head_name]:
             #print(train_set["dipole"])
             valid_set["dipole"] = (valid_set["dipole"] - dipoles_mean) / dipoles_std
             #print(train_set["dipole"])
             valid_set["polarizability"] = (valid_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
             #exit()
-        scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
+        scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)'''
         # Create data loader for this head
         if isinstance(train_sets[head_config.head_name], list):
             dataset_size = len(train_sets[head_config.head_name])
