@@ -771,6 +771,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         edge_irreps: Optional[o3.Irreps] = None,  # pylint: disable=unused-argument
         dipole_only: Optional[bool] = True,  # pylint: disable=unused-argument
         use_polarizability: Optional[bool] = True,  # pylint: disable=unused-argument
+        means_stds: Optional[Dict[str, torch.Tensor]] = None,  # pylint: disable=W0613
     ):
         super().__init__()
         self.register_buffer(
@@ -780,6 +781,27 @@ class AtomicDielectricMACE(torch.nn.Module):
         self.register_buffer(
             "num_interactions", torch.tensor(num_interactions, dtype=torch.int64)
         )
+        
+        # Predefine buffers to be TorchScript-safe
+        self.register_buffer("dipole_mean", torch.zeros(3))
+        self.register_buffer("dipole_std", torch.ones(3))
+        self.register_buffer("polarizability_mean", torch.zeros(9))  # 3x3 matrix flattened
+        self.register_buffer("polarizability_std", torch.ones(9))
+        #self.register_buffer("mean_polarizability_sh", torch.zeros(6))
+        #self.register_buffer("std_polarizability_sh", torch.ones(6))
+        if means_stds is not None:
+            if "dipole_mean" in means_stds:
+                self.dipole_mean.data.copy_(means_stds["dipole_mean"])
+            if "dipole_std" in means_stds:
+                self.dipole_std.data.copy_(means_stds["dipole_std"])
+            if "polarizability_mean" in means_stds:
+                self.polarizability_mean.data.copy_(means_stds["polarizability_mean"])
+            if "polarizability_std" in means_stds:
+                self.polarizability_mean.data.copy_(means_stds["polarizability_std"])
+            #if "mean_polarizability_sh" in means_stds:
+            #    self.mean_polarizability_sh.data.copy_(means_stds["mean_polarizability_sh"])
+            #if "std_polarizability_sh" in means_stds:
+            #    self.std_polarizability_sh.data.copy_(means_stds["std_polarizability_sh"])'''
         assert atomic_energies is None
         #self.use_polarizability = use_polarizability
         #self.use_dipole = use_dipole
@@ -904,7 +926,6 @@ class AtomicDielectricMACE(torch.nn.Module):
         compute_dielectric_derivatives: bool = False,  # no training on derivatives
         compute_edge_forces: bool = False,  # pylint: disable=W0613
         compute_atomic_stresses: bool = False,  # pylint: disable=W0613
-        means_stds: Optional[Dict[str, torch.Tensor]] = None,  # pylint: disable=W0613
     ) -> Dict[str, Optional[torch.Tensor]]:
         assert compute_force is False
         assert compute_virials is False
@@ -1046,21 +1067,30 @@ class AtomicDielectricMACE(torch.nn.Module):
         # =====================
         # Denormalization begins
         # =====================
-        if self.means_stds is not None:
-            
-            total_dipole = total_dipole * self.means_stds["dipole_std"] + self.means_stds["dipole_mean"]
-            if dmu_dr is not None:
-                dmu_dr = dmu_dr * self.means_stds["dipole_std"].view(1, 1, 3)
+        
+        """print(total_dipole.shape, self.dipole_std.shape, self.dipole_mean.shape)    
+        print("Total dipole: ", total_dipole, "Dipole std: ", self.dipole_std, "Dipole mean: ", self.dipole_mean)
+        total_dipole = total_dipole * self.dipole_std + self.dipole_mean
+        print("Back to normal dipole: ", total_dipole)
+        if dmu_dr is not None:
+            print("Yes we do calc derivatives of mu")
+            dmu_dr = dmu_dr * self.dipole_std.view(1, 1, 3)
 
-           
-            total_polarizability = total_polarizability * self.means_stds["polar_std"] + self.means_stds["polar_mean"]
-            if dalpha_dr is not None:
-                dalpha_dr = dalpha_dr * self.means_stds["polar_std"].view(1, 1, 9)
-
-            if hasattr(self, "std_polarizability_sh") and self.std_polarizability_sh is not None:
-                total_polarizability_spherical = (
-                    total_polarizability_spherical * self.means_stds["polar_std"] + self.means_stds["polar_mean"]
+        print(total_polarizability.shape, self.polarizability_std.shape, self.polarizability_mean.shape)
+        total_polarizability = total_polarizability.view(-1, 9)
+        total_polarizability = total_polarizability * self.polarizability_std + self.polarizability_mean
+        total_polarizability = total_polarizability.view(-1, 3, 3)
+        total_polarizability = spherical_to_cartesian(
+                total_polarizability_spherical
             )
+        if dalpha_dr is not None:
+            print("Yes we do calc derivatives of alpha")
+            dalpha_dr = dalpha_dr * self.polarizability_std.view(1, 1, 9)
+
+        '''if hasattr(self, "std_polarizability_sh") and self.std_polarizability_sh is not None:
+            total_polarizability_spherical = (
+                total_polarizability_spherical * self.means_stds["polar_std"] + self.means_stds["polar_mean"]
+        )'''"""
 
 
         output = {

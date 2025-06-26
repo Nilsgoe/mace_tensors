@@ -19,6 +19,7 @@ def configure_model(
     heads=None,
     z_table=None,
     head_configs=None,
+    means_stds=None,
 ):
     # Selecting outputs
     compute_virials = args.loss == "virials"
@@ -175,7 +176,7 @@ def configure_model(
         )
         model_config_foundation = None
 
-    model = _build_model(args, model_config, model_config_foundation, heads)
+    model = _build_model(args, model_config, model_config_foundation, heads,means_stds=means_stds)
 
     if model_foundation is not None:
         model = load_foundations_elements(
@@ -206,7 +207,7 @@ def _determine_atomic_inter_shift(mean, heads):
 
 
 def _build_model(
-    args, model_config, model_config_foundation, heads
+    args, model_config, model_config_foundation, heads,means_stds=None
 ):  # pylint: disable=too-many-return-statements
     if args.model == "MACE":
         if args.interaction_first not in [
@@ -280,6 +281,7 @@ def _build_model(
             ],
             MLP_irreps=o3.Irreps(args.MLP_irreps),
             use_polarizability=True,
+            means_stds=means_stds,
             #use_dipole=args.compute_atomic_dipole,
             # dipole_scale=1,
             # dipole_shift=0,

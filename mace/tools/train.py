@@ -170,6 +170,10 @@ def train(
     distributed_model: Optional[DistributedDataParallel] = None,
     train_sampler: Optional[DistributedSampler] = None,
     rank: Optional[int] = 0,
+    dipole_mean: torch.Tensor = None,
+    dipole_std: torch.Tensor = None,
+    polarizability_mean: torch.Tensor = None,
+    polarizability_std: torch.Tensor = None,
 ):
     lowest_loss = np.inf
     valid_loss = np.inf
@@ -196,6 +200,10 @@ def train(
             data_loader=valid_loader,
             output_args=output_args,
             device=device,
+            dipole_mean=dipole_mean,
+            dipole_std=dipole_std,
+            polarizability_mean=polarizability_mean,
+            polarizability_std=polarizability_std,
         )
         valid_err_log(
             valid_loss_head, eval_metrics, logger, log_errors, None, valid_loader_name
@@ -262,6 +270,10 @@ def train(
                         data_loader=valid_loader,
                         output_args=output_args,
                         device=device,
+                        dipole_mean=dipole_mean,
+                        dipole_std=dipole_std,
+                        polarizability_mean=polarizability_mean,
+                        polarizability_std=polarizability_std,
                     )
                     if rank == 0:
                         valid_err_log(
@@ -535,11 +547,15 @@ def evaluate(
     data_loader: DataLoader,
     output_args: Dict[str, bool],
     device: torch.device,
+    dipole_mean: torch.Tensor,
+    dipole_std: torch.Tensor,
+    polarizability_mean: torch.Tensor,
+    polarizability_std: torch.Tensor,
 ) -> Tuple[float, Dict[str, Any]]:
     for param in model.parameters():
         param.requires_grad = False
 
-    metrics = MACELoss(loss_fn=loss_fn).to(device)
+    metrics = MACELoss(loss_fn=loss_fn,dipole_mean=dipole_mean,dipole_std=dipole_std,polarizability_mean=polarizability_mean,polarizability_std=polarizability_std).to(device)
 
     start_time = time.time()
     for batch in data_loader:
@@ -565,7 +581,7 @@ def evaluate(
 
 
 class MACELoss(Metric):
-    def __init__(self, loss_fn: torch.nn.Module):
+    def __init__(self, loss_fn,dipole_mean,dipole_std,polarizability_mean,polarizability_std: torch.nn.Module):
         super().__init__()
         self.loss_fn = loss_fn
         self.add_state("total_loss", default=torch.tensor(0.0), dist_reduce_fx="sum")
@@ -596,7 +612,13 @@ class MACELoss(Metric):
         self.add_state(
             "delta_polarizability_per_atom", default=[], dist_reduce_fx="cat"
         )
+         # Register with precomputed values
+        self.add_state("dipole_mean", default=dipole_mean.clone(), dist_reduce_fx="mean", persistent=True)
+        self.add_state("dipole_std", default=dipole_std.clone(), dist_reduce_fx="mean", persistent=True)
 
+        self.add_state("polarizability_mean", default=polarizability_mean.clone(), dist_reduce_fx="mean", persistent=True)
+        self.add_state("polarizability_std", default=polarizability_std.clone(), dist_reduce_fx="mean", persistent=True)
+        
     def update(self, batch, output):  # pylint: disable=arguments-differ
         loss = self.loss_fn(pred=output, ref=batch)
         self.total_loss += loss
@@ -622,7 +644,7 @@ class MACELoss(Metric):
                 (batch.virials - output["virials"])
                 / (batch.ptr[1:] - batch.ptr[:-1]).view(-1, 1, 1)
             )
-        if output.get("dipole") is not None and batch.dipole is not None:
+        '''if output.get("dipole") is not None and batch.dipole is not None:
             self.Mus_computed += 1.0
             self.mus.append(batch.dipole)
             self.delta_mus.append(batch.dipole - output["dipole"])
@@ -641,7 +663,39 @@ class MACELoss(Metric):
             self.delta_polarizability_per_atom.append(
                 (batch.polarizability - output["polarizability"])
                 / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1).unsqueeze(-1)
+            )'''
+        if output.get("dipole") is not None and batch.dipole is not None:
+            self.Mus_computed += 1.0
+
+            # De-normalize both ref and pred
+            ref_dipole = batch.dipole * self.dipole_std + self.dipole_mean
+            pred_dipole = output["dipole"] * self.dipole_std + self.dipole_mean
+
+            self.mus.append(ref_dipole)
+            self.delta_mus.append(ref_dipole - pred_dipole)
+            self.delta_mus_per_atom.append(
+                (ref_dipole - pred_dipole)
+                / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1)
             )
+
+        if output.get("polarizability") is not None and batch.polarizability is not None:
+            self.polarizability_computed += 1.0
+
+            # De-normalize both ref and pred
+            print("Polarizability Mean:", self.polarizability_mean)
+            print("Polarizability Std:", self.polarizability_std)
+            print("Batch Polarizability:", batch.polarizability)
+            print("Output Polarizability:", output["polarizability"])
+            
+            ref_polar = batch.polarizability * self.polarizability_std + self.polarizability_mean
+            pred_polar = output["polarizability"] * self.polarizability_std + self.polarizability_mean
+            print("De-normalized Ref Polarizability:", ref_polar)
+            print("De-normalized Pred Polarizability:", pred_polar)
+            self.delta_polarizability.append(ref_polar - pred_polar)
+            self.delta_polarizability_per_atom.append(
+                (ref_polar - pred_polar)
+                / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1).unsqueeze(-1)
+    )
 
     def convert(self, delta: Union[torch.Tensor, List[torch.Tensor]]) -> np.ndarray:
         if isinstance(delta, list):

@@ -596,12 +596,13 @@ def run(args) -> None:
             #print(train_set["polarizability"])
             dipoles.append(train_set["dipole"])
             polarizabilities.append(train_set["polarizability"])
-        for train_set in valid_sets[head_config.head_name]:
+        ### also using the valid sets would bias the data
+        #for train_set in valid_sets[head_config.head_name]:
             #print(train_set["polarizability"])
-            dipoles.append(train_set["dipole"])
-            polarizabilities.append(train_set["polarizability"])
+        #    dipoles.append(train_set["dipole"])
+        #    polarizabilities.append(train_set["polarizability"])
 
-        print("\n\n\nLEngth sets:",len(dipoles), len(polarizabilities))     
+        print("\n\n\nLength sets:",len(dipoles), len(polarizabilities))     
         dipoles = torch.cat(dipoles, dim=0)  # shape: [total_samples, 3]
         polarizabilities = torch.cat(polarizabilities, dim=0)  # shape: [total_samples, ...]    
         dipoles_mean = dipoles.mean(axis=0)
@@ -611,21 +612,22 @@ def run(args) -> None:
         means_std_dipole_polar={"dipole_mean": dipoles_mean, "dipole_std": dipoles_std, "polar_mean": polarizabilities_mean, "polar_std": polarizabilities_std}
         logging.info(f"Mean dipole: {dipoles_mean}, std: {dipoles_std}")
         logging.info(f"Mean polarizability: {polarizabilities_mean}, std: {polarizabilities_std}")
+        print("Normalizing dipoles and polarizabilities for head:", head_config.head_name)
         for train_set in train_sets[head_config.head_name]:
             #print(train_set["dipole"])
             train_set["dipole"] = (train_set["dipole"] - dipoles_mean) / dipoles_std
-            #print(train_set["dipole"])
+            print(train_set["dipole"])
             train_set["polarizability"] = (train_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
             #exit()
         
-        '''
+        
         for valid_set in valid_sets[head_config.head_name]:
             #print(train_set["dipole"])
             valid_set["dipole"] = (valid_set["dipole"] - dipoles_mean) / dipoles_std
             #print(train_set["dipole"])
             valid_set["polarizability"] = (valid_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
             #exit()
-        scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)'''
+        #scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
         # Create data loader for this head
         if isinstance(train_sets[head_config.head_name], list):
             dataset_size = len(train_sets[head_config.head_name])
@@ -695,11 +697,11 @@ def run(args) -> None:
     #print(train_loader)
     
 
-    loss_fn = get_loss_fn(args, dipole_only, args.compute_dipole,dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
+    loss_fn = get_loss_fn(args, dipole_only, args.compute_dipole) #,means_std_dipole_polar["dipole_mean"], means_std_dipole_polar["dipole_std"], means_std_dipole_polar["polar_mean"], means_std_dipole_polar["polar_std"])
     args.avg_num_neighbors = get_avg_num_neighbors(head_configs, args, train_loader, device)
 
     # Model
-    model, output_args = configure_model(args, train_loader, atomic_energies, model_foundation, heads, z_table, head_configs)
+    model, output_args = configure_model(args, train_loader, atomic_energies, model_foundation, heads, z_table, head_configs,means_stds=means_std_dipole_polar)
     model.to(device)
 
     logging.debug(model)
@@ -857,6 +859,10 @@ def run(args) -> None:
         plotter=plotter,
         train_sampler=train_sampler,
         rank=rank,
+        dipole_mean= means_std_dipole_polar["dipole_mean"],
+        dipole_std= means_std_dipole_polar["dipole_std"],
+        polarizability_mean= means_std_dipole_polar["polar_mean"],
+        polarizability_std= means_std_dipole_polar["polar_std"],
     )
 
     logging.info("")
@@ -1022,6 +1028,10 @@ def run(args) -> None:
             device=device,
             distributed=args.distributed,
             skip_heads=skip_heads,
+            dipole_mean= means_std_dipole_polar["dipole_mean"],
+            dipole_std= means_std_dipole_polar["dipole_std"],
+            polarizability_mean= means_std_dipole_polar["polar_mean"],
+            polarizability_std= means_std_dipole_polar["polar_std"],
         )
         logging.info("Error-table on TRAIN and VALID:\n" + str(table_train_valid))
 
@@ -1035,6 +1045,10 @@ def run(args) -> None:
                 log_wandb=args.wandb,
                 device=device,
                 distributed=args.distributed,
+                dipole_mean= means_std_dipole_polar["dipole_mean"],
+                dipole_std= means_std_dipole_polar["dipole_std"],
+                polarizability_mean= means_std_dipole_polar["polar_mean"],
+                polarizability_std= means_std_dipole_polar["polar_std"],                
             )
             logging.info("Error-table on TEST:\n" + str(table_test))
         if args.plot:

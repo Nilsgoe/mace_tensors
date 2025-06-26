@@ -30,6 +30,10 @@ def create_error_table(
     device: str,
     distributed: bool = False,
     skip_heads: Optional[List[str]] = None,
+    dipole_mean: torch.Tensor,
+    dipole_std: torch.Tensor,
+    polarizability_mean: torch.Tensor,
+    polarizability_std: torch.Tensor,
 ) -> PrettyTable:
     if log_wandb:
         import wandb
@@ -121,6 +125,10 @@ def create_error_table(
             data_loader=data_loader,
             output_args=output_args,
             device=device,
+            dipole_mean=dipole_mean,
+            dipole_std=dipole_std,
+            polarizability_mean=polarizability_mean,
+            polarizability_std=polarizability_std,
         )
         if distributed:
             torch.distributed.barrier()
