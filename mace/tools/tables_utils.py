@@ -30,10 +30,10 @@ def create_error_table(
     device: str,
     distributed: bool = False,
     skip_heads: Optional[List[str]] = None,
-    dipole_mean: torch.Tensor,
-    dipole_std: torch.Tensor,
-    polarizability_mean: torch.Tensor,
-    polarizability_std: torch.Tensor,
+    dipole_mean: Optional[torch.Tensor] = None,
+    dipole_std: Optional[torch.Tensor] = None,
+    polarizability_mean: Optional[torch.Tensor] = None,
+    polarizability_std: Optional[torch.Tensor] = None,
 ) -> PrettyTable:
     if log_wandb:
         import wandb

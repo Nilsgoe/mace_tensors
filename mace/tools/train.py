@@ -612,12 +612,16 @@ class MACELoss(Metric):
         self.add_state(
             "delta_polarizability_per_atom", default=[], dist_reduce_fx="cat"
         )
-         # Register with precomputed values
+        ''' # Register with precomputed values
         self.add_state("dipole_mean", default=dipole_mean.clone(), dist_reduce_fx="mean", persistent=True)
         self.add_state("dipole_std", default=dipole_std.clone(), dist_reduce_fx="mean", persistent=True)
 
         self.add_state("polarizability_mean", default=polarizability_mean.clone(), dist_reduce_fx="mean", persistent=True)
-        self.add_state("polarizability_std", default=polarizability_std.clone(), dist_reduce_fx="mean", persistent=True)
+        self.add_state("polarizability_std", default=polarizability_std.clone(), dist_reduce_fx="mean", persistent=True)'''
+        self.register_buffer("dipole_mean", dipole_mean.clone())
+        self.register_buffer("dipole_std", dipole_std.clone())
+        self.register_buffer("polarizability_mean", polarizability_mean.clone())
+        self.register_buffer("polarizability_std", polarizability_std.clone())
         
     def update(self, batch, output):  # pylint: disable=arguments-differ
         loss = self.loss_fn(pred=output, ref=batch)
@@ -682,15 +686,15 @@ class MACELoss(Metric):
             self.polarizability_computed += 1.0
 
             # De-normalize both ref and pred
-            print("Polarizability Mean:", self.polarizability_mean)
-            print("Polarizability Std:", self.polarizability_std)
-            print("Batch Polarizability:", batch.polarizability)
-            print("Output Polarizability:", output["polarizability"])
+            #print("Polarizability Mean:", self.polarizability_mean)
+            #print("Polarizability Std:", self.polarizability_std)
+            #print("Batch Polarizability:", batch.polarizability)
+            #print("Output Polarizability:", output["polarizability"])
             
             ref_polar = batch.polarizability * self.polarizability_std + self.polarizability_mean
             pred_polar = output["polarizability"] * self.polarizability_std + self.polarizability_mean
-            print("De-normalized Ref Polarizability:", ref_polar)
-            print("De-normalized Pred Polarizability:", pred_polar)
+            #print("De-normalized Ref Polarizability:", ref_polar)
+            #print("De-normalized Pred Polarizability:", pred_polar)
             self.delta_polarizability.append(ref_polar - pred_polar)
             self.delta_polarizability_per_atom.append(
                 (ref_polar - pred_polar)

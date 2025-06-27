@@ -108,6 +108,8 @@ class MACECalculator(Calculator):
         self.results = {}
 
         self.model_type = model_type
+        print(f"Using model type: {self.model_type}")
+        #exit()
         self.compute_atomic_stresses = False
 
         if model_type == "MACE":
@@ -128,7 +130,7 @@ class MACECalculator(Calculator):
                 #"charges",
                 "dipole",
                 "polarizability",
-                "polarizability_sh",
+                #"polarizability_sh",
             ]    
     
         elif model_type == "EnergyDipoleMACE":
@@ -264,7 +266,19 @@ class MACECalculator(Calculator):
         for model in self.models:
             for param in model.parameters():
                 param.requires_grad = False
-
+        try:                    
+            if model.state_dict()["dipole_mean"] is not None:
+                self.dipole_mean = model.state_dict()["dipole_mean"].to(self.device)
+                self.dipole_std = model.state_dict()["dipole_std"].to(self.device)  
+                self.polarizability_mean = model.state_dict()["polarizability_mean"].to(self.device)
+                self.polarizability_std = model.state_dict()["polarizability_std"].to(self.device)
+            else:
+                self.dipole_mean = torch.zeros(3, device=self.device)
+                self.dipole_std = torch.ones(3, device=self.device)
+                self.polarizability_mean = torch.zeros((3, 3), device=self.device)
+                self.polarizability_std = torch.ones((3, 3), device=self.device) 
+        except:
+            pass
     def _create_result_tensors(
         self, model_type: str, num_models: int, num_atoms: int
     ) -> dict:
@@ -289,12 +303,12 @@ class MACECalculator(Calculator):
                     "stress": stress,
                 }
             )
-        if model_type in ["EnergyDipoleMACE", "DipoleMACE", "DipolePolarizabilityMACE"]:
-            #charges = torch.zeros(num_models, num_atoms, device=self.device)
+        if model_type in ["EnergyDipoleMACE", "DipoleMACE","DipolePolarizabilityMACE"]:
+            charges = torch.zeros(num_models, num_atoms, device=self.device)
             dipole = torch.zeros(num_models, 3, device=self.device)
             dict_of_tensors.update(
                 {
-                    #"charges": charges,
+                    "charges": charges,
                     "dipole": dipole,
                 }
             )
@@ -469,20 +483,25 @@ class MACECalculator(Calculator):
             self.results["charges"] = (
                 torch.mean(ret_tensors["charges"], dim=0).cpu().numpy()
             )
-            self.results["dipole"] = (
-                torch.mean(ret_tensors["dipole"], dim=0).cpu().numpy()
-            )
+            if self.dipole_mean is not None:
+                self.results["dipole"] = (
+                    torch.mean(ret_tensors["dipole"], dim=0).cpu().numpy()*self.dipole_std.cpu().numpy() +self.dipole_mean.cpu().numpy()
+                )
+            else:
+                self.results["dipole"] = (
+                    torch.mean(ret_tensors["dipole"], dim=0).cpu().numpy()
+                )
             if self.num_models > 1:
                 self.results["dipole_var"] = (
-                    torch.var(ret_tensors["dipole"], dim=0, unbiased=False)
-                    .cpu()
-                    .numpy()
-                )
+                        torch.var(ret_tensors["dipole"], dim=0, unbiased=False)
+                        .cpu()
+                        .numpy()
+                    )
         if self.model_type in [
             "DipolePolarizabilityMACE",
         ]:
             self.results["polarizability"] = (
-                torch.mean(ret_tensors["polarizability"], dim=0).cpu().numpy()
+                torch.mean(ret_tensors["polarizability"], dim=0).cpu().numpy() *self.polarizability_std.cpu().numpy() +self.polarizability_mean.cpu().numpy()
             )
             self.results["polarizability_sh"] = (
                 torch.mean(ret_tensors["polarizability_sh"], dim=0).cpu().numpy()

@@ -609,7 +609,7 @@ def run(args) -> None:
         dipoles_std  = dipoles.std(axis=0)
         polarizabilities_mean = polarizabilities.mean(axis=0)
         polarizabilities_std  = polarizabilities.std(axis=0)
-        means_std_dipole_polar={"dipole_mean": dipoles_mean, "dipole_std": dipoles_std, "polar_mean": polarizabilities_mean, "polar_std": polarizabilities_std}
+        means_std_dipole_polar={"dipole_mean": dipoles_mean, "dipole_std": dipoles_std, "polarizability_mean": polarizabilities_mean, "polarizability_std": polarizabilities_std}
         logging.info(f"Mean dipole: {dipoles_mean}, std: {dipoles_std}")
         logging.info(f"Mean polarizability: {polarizabilities_mean}, std: {polarizabilities_std}")
         print("Normalizing dipoles and polarizabilities for head:", head_config.head_name)
@@ -697,7 +697,7 @@ def run(args) -> None:
     #print(train_loader)
     
 
-    loss_fn = get_loss_fn(args, dipole_only, args.compute_dipole) #,means_std_dipole_polar["dipole_mean"], means_std_dipole_polar["dipole_std"], means_std_dipole_polar["polar_mean"], means_std_dipole_polar["polar_std"])
+    loss_fn = get_loss_fn(args, dipole_only, args.compute_dipole) #,means_std_dipole_polar["dipole_mean"], means_std_dipole_polar["dipole_std"], means_std_dipole_polar["polarizability_mean"], means_std_dipole_polar["polarizability_std"])
     args.avg_num_neighbors = get_avg_num_neighbors(head_configs, args, train_loader, device)
 
     # Model
@@ -861,8 +861,8 @@ def run(args) -> None:
         rank=rank,
         dipole_mean= means_std_dipole_polar["dipole_mean"],
         dipole_std= means_std_dipole_polar["dipole_std"],
-        polarizability_mean= means_std_dipole_polar["polar_mean"],
-        polarizability_std= means_std_dipole_polar["polar_std"],
+        polarizability_mean= means_std_dipole_polar["polarizability_mean"],
+        polarizability_std= means_std_dipole_polar["polarizability_std"],
     )
 
     logging.info("")
@@ -1030,8 +1030,8 @@ def run(args) -> None:
             skip_heads=skip_heads,
             dipole_mean= means_std_dipole_polar["dipole_mean"],
             dipole_std= means_std_dipole_polar["dipole_std"],
-            polarizability_mean= means_std_dipole_polar["polar_mean"],
-            polarizability_std= means_std_dipole_polar["polar_std"],
+            polarizability_mean= means_std_dipole_polar["polarizability_mean"],
+            polarizability_std= means_std_dipole_polar["polarizability_std"],
         )
         logging.info("Error-table on TRAIN and VALID:\n" + str(table_train_valid))
 
@@ -1047,8 +1047,8 @@ def run(args) -> None:
                 distributed=args.distributed,
                 dipole_mean= means_std_dipole_polar["dipole_mean"],
                 dipole_std= means_std_dipole_polar["dipole_std"],
-                polarizability_mean= means_std_dipole_polar["polar_mean"],
-                polarizability_std= means_std_dipole_polar["polar_std"],                
+                polarizability_mean= means_std_dipole_polar["polarizability_mean"],
+                polarizability_std= means_std_dipole_polar["polarizability_std"],                
             )
             logging.info("Error-table on TEST:\n" + str(table_test))
         if args.plot:

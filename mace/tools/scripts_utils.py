@@ -570,8 +570,8 @@ def get_loss_fn(
     compute_dipole: bool,
     dipole_mean: Optional[float] = None,
     dipole_std: Optional[float] = None,
-    polar_mean: Optional[float] = None,
-    polar_std: Optional[float] = None,
+    polarizability_mean: Optional[float] = None,
+    polarizability_std: Optional[float] = None,
 
 ) -> torch.nn.Module:
     if args.loss == "weighted":
@@ -631,8 +631,8 @@ def get_loss_fn(
             polarizability_weight=args.polarizability_weight,
             #dipole_mean=dipole_mean,
             #dipole_std=dipole_std,  
-            #polar_mean= polar_mean,
-            #polar_std= polar_std,
+            #polarizability_mean= polarizability_mean,
+            #polarizability_std= polarizability_std,
         )
     elif args.loss == "energy_forces_dipole":
         assert dipole_only is False and compute_dipole is True

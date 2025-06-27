@@ -785,8 +785,8 @@ class AtomicDielectricMACE(torch.nn.Module):
         # Predefine buffers to be TorchScript-safe
         self.register_buffer("dipole_mean", torch.zeros(3))
         self.register_buffer("dipole_std", torch.ones(3))
-        self.register_buffer("polarizability_mean", torch.zeros(9))  # 3x3 matrix flattened
-        self.register_buffer("polarizability_std", torch.ones(9))
+        self.register_buffer("polarizability_mean", torch.zeros(3,3))  # 3x3 matrix flattened
+        self.register_buffer("polarizability_std", torch.ones(3,3))
         #self.register_buffer("mean_polarizability_sh", torch.zeros(6))
         #self.register_buffer("std_polarizability_sh", torch.ones(6))
         if means_stds is not None:
@@ -797,7 +797,7 @@ class AtomicDielectricMACE(torch.nn.Module):
             if "polarizability_mean" in means_stds:
                 self.polarizability_mean.data.copy_(means_stds["polarizability_mean"])
             if "polarizability_std" in means_stds:
-                self.polarizability_mean.data.copy_(means_stds["polarizability_std"])
+                self.polarizability_std.data.copy_(means_stds["polarizability_std"])
             #if "mean_polarizability_sh" in means_stds:
             #    self.mean_polarizability_sh.data.copy_(means_stds["mean_polarizability_sh"])
             #if "std_polarizability_sh" in means_stds:

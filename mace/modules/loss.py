@@ -573,7 +573,7 @@ class DipoleSingleLoss(torch.nn.Module):
 
 
 class DipolePolarLoss(torch.nn.Module):
-    def __init__(self, dipole_weight=1.0,polarizability_weight=1.0) -> None: #dipole_mean=None,dipole_std=None,polar_mean=None,polar_std=None
+    def __init__(self, dipole_weight=1.0,polarizability_weight=1.0) -> None: #dipole_mean=None,dipole_std=None,polarizability_mean=None,polarizability_std=None
         super().__init__()
         self.register_buffer(
             "dipole_weight",
@@ -593,12 +593,12 @@ class DipolePolarLoss(torch.nn.Module):
             torch.tensor(dipole_std, dtype=torch.get_default_dtype()),
         )
         self.register_buffer(
-            "polar_mean",
-            torch.tensor(polar_mean, dtype=torch.get_default_dtype()),
+            "polarizability_mean",
+            torch.tensor(polarizability_mean, dtype=torch.get_default_dtype()),
         )
         self.register_buffer(
-            "polar_std",
-            torch.tensor(polar_std, dtype=torch.get_default_dtype()),
+            "polarizability_std",
+            torch.tensor(polarizability_std, dtype=torch.get_default_dtype()),
         )'''
 
     def forward(self, ref: Batch, pred: TensorDict, ddp: Optional[bool] = None
@@ -608,7 +608,7 @@ class DipolePolarLoss(torch.nn.Module):
         ) # scale adjustment
         
         loss_polarizability = (
-            weighted_mean_squared_error_polarizability(ref, pred, ddp)#,self.polar_mean,self.polar_std) #* 100.0
+            weighted_mean_squared_error_polarizability(ref, pred, ddp)#,self.polarizability_mean,self.polarizability_std) #* 100.0
         )  # scale adjustment  
         return self.dipole_weight * loss_dipole + self.polarizability_weight * loss_polarizability
 
