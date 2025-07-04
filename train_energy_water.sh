@@ -1,0 +1,31 @@
+python /home/ngoen/software/mace_train/mace/cli/run_train.py \
+    --name="mace_energy_etoh_ccsdt_sf" \
+    --train_file="ethanol_dataset_small_forces.extxyz" \
+    --valid_fraction=0.05 \
+    --model="MACE" \
+    --E0="{  1: -13.60526308125101,  6: -1029.327743226153,  8: -2042.1517974972069}" \
+    --num_interactions=2 \
+    --num_channels=128 \
+    --max_L=1 \
+    --correlation=3 \
+    --forces_weight=1000 \
+    --energy_weight=10 \
+    --energy_key="CCSDT_energy_CBS" \
+    --forces_key="CCSDT_gradient_CBS" \
+    --weight_decay=5e-10 \
+    --clip_grad=10.0 \
+    --batch_size=16 \
+    --valid_batch_size=8 \
+    --max_num_epochs=400 \
+    --scheduler_patience=50 \
+    --patience=50 \
+    --eval_interval=1 \
+    --ema \
+    --start_swa=150 \
+    --swa_forces_weight=10 \
+    --error_table='PerAtomRMSE' \
+    --default_dtype="float64" \
+    --device=cuda \
+    --seed=123 \
+    --restart_latest \
+    --save_cpu
