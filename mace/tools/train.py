@@ -555,7 +555,13 @@ def evaluate(
     for param in model.parameters():
         param.requires_grad = False
 
-    metrics = MACELoss(loss_fn=loss_fn,dipole_mean=dipole_mean,dipole_std=dipole_std,polarizability_mean=polarizability_mean,polarizability_std=polarizability_std).to(device)
+    metrics = MACELoss(
+        loss_fn=loss_fn,
+        dipole_mean=dipole_mean,
+        dipole_std=dipole_std,
+        polarizability_mean=polarizability_mean,
+        polarizability_std=polarizability_std,
+    ).to(device)
 
     start_time = time.time()
     for batch in data_loader:
@@ -581,7 +587,14 @@ def evaluate(
 
 
 class MACELoss(Metric):
-    def __init__(self, loss_fn,dipole_mean,dipole_std,polarizability_mean,polarizability_std: torch.nn.Module):
+    def __init__(
+        self,
+        loss_fn,
+        dipole_mean,
+        dipole_std,
+        polarizability_mean,
+        polarizability_std: torch.nn.Module,
+    ):
         super().__init__()
         self.loss_fn = loss_fn
         self.add_state("total_loss", default=torch.tensor(0.0), dist_reduce_fx="sum")
@@ -612,17 +625,11 @@ class MACELoss(Metric):
         self.add_state(
             "delta_polarizability_per_atom", default=[], dist_reduce_fx="cat"
         )
-        ''' # Register with precomputed values
-        self.add_state("dipole_mean", default=dipole_mean.clone(), dist_reduce_fx="mean", persistent=True)
-        self.add_state("dipole_std", default=dipole_std.clone(), dist_reduce_fx="mean", persistent=True)
-
-        self.add_state("polarizability_mean", default=polarizability_mean.clone(), dist_reduce_fx="mean", persistent=True)
-        self.add_state("polarizability_std", default=polarizability_std.clone(), dist_reduce_fx="mean", persistent=True)'''
         self.register_buffer("dipole_mean", dipole_mean.clone())
         self.register_buffer("dipole_std", dipole_std.clone())
         self.register_buffer("polarizability_mean", polarizability_mean.clone())
         self.register_buffer("polarizability_std", polarizability_std.clone())
-        
+
     def update(self, batch, output):  # pylint: disable=arguments-differ
         loss = self.loss_fn(pred=output, ref=batch)
         self.total_loss += loss
@@ -648,26 +655,7 @@ class MACELoss(Metric):
                 (batch.virials - output["virials"])
                 / (batch.ptr[1:] - batch.ptr[:-1]).view(-1, 1, 1)
             )
-        '''if output.get("dipole") is not None and batch.dipole is not None:
-            self.Mus_computed += 1.0
-            self.mus.append(batch.dipole)
-            self.delta_mus.append(batch.dipole - output["dipole"])
-            self.delta_mus_per_atom.append(
-                (batch.dipole - output["dipole"])
-                / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1)
-            )
-        if (
-            output.get("polarizability") is not None
-            and batch.polarizability is not None
-        ):
-            self.polarizability_computed += 1.0
-            self.delta_polarizability.append(
-                batch.polarizability - output["polarizability"]
-            )
-            self.delta_polarizability_per_atom.append(
-                (batch.polarizability - output["polarizability"])
-                / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1).unsqueeze(-1)
-            )'''
+
         if output.get("dipole") is not None and batch.dipole is not None:
             self.Mus_computed += 1.0
 
@@ -682,24 +670,33 @@ class MACELoss(Metric):
                 / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1)
             )
 
-        if output.get("polarizability") is not None and batch.polarizability is not None:
+        if (
+            output.get("polarizability") is not None
+            and batch.polarizability is not None
+        ):
             self.polarizability_computed += 1.0
 
             # De-normalize both ref and pred
-            #print("Polarizability Mean:", self.polarizability_mean)
-            #print("Polarizability Std:", self.polarizability_std)
-            #print("Batch Polarizability:", batch.polarizability)
-            #print("Output Polarizability:", output["polarizability"])
-            
-            ref_polar = batch.polarizability * self.polarizability_std + self.polarizability_mean
-            pred_polar = output["polarizability"] * self.polarizability_std + self.polarizability_mean
-            #print("De-normalized Ref Polarizability:", ref_polar)
-            #print("De-normalized Pred Polarizability:", pred_polar)
+            # print("Polarizability Mean:", self.polarizability_mean)
+            # print("Polarizability Std:", self.polarizability_std)
+            # print("Batch Polarizability:", batch.polarizability)
+            # print("Output Polarizability:", output["polarizability"])
+
+            ref_polar = (
+                batch.polarizability * self.polarizability_std
+                + self.polarizability_mean
+            )
+            pred_polar = (
+                output["polarizability"] * self.polarizability_std
+                + self.polarizability_mean
+            )
+            # print("De-normalized Ref Polarizability:", ref_polar)
+            # print("De-normalized Pred Polarizability:", pred_polar)
             self.delta_polarizability.append(ref_polar - pred_polar)
             self.delta_polarizability_per_atom.append(
                 (ref_polar - pred_polar)
                 / (batch.ptr[1:] - batch.ptr[:-1]).unsqueeze(-1).unsqueeze(-1)
-    )
+            )
 
     def convert(self, delta: Union[torch.Tensor, List[torch.Tensor]]) -> np.ndarray:
         if isinstance(delta, list):
@@ -748,7 +745,7 @@ class MACELoss(Metric):
             aux["rmse_mu_per_atom"] = compute_rmse(delta_mus_per_atom)
             aux["rel_rmse_mu"] = compute_rel_rmse(delta_mus, mus)
             aux["q95_mu"] = compute_q95(delta_mus)
-            
+
         if self.polarizability_computed:
             delta_polarizability = self.convert(self.delta_polarizability)
             delta_polarizability_per_atom = self.convert(
@@ -763,5 +760,5 @@ class MACELoss(Metric):
                 delta_polarizability_per_atom
             )
             aux["q95_polarizability"] = compute_q95(delta_polarizability)
-        
+
         return aux["loss"], aux

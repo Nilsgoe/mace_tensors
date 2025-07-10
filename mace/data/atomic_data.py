@@ -62,7 +62,7 @@ class AtomicData(torch_geometric.data.Data):
         stress_weight: Optional[torch.Tensor],  # [,]
         virials_weight: Optional[torch.Tensor],  # [,]
         dipole_weight: Optional[torch.Tensor],  # [,]
-        polarizability_weight: Optional[torch.Tensor], # [,]
+        polarizability_weight: Optional[torch.Tensor],  # [,]
         charges_weight: Optional[torch.Tensor],  # [,]
         forces: Optional[torch.Tensor],  # [n_nodes, 3]
         energy: Optional[torch.Tensor],  # [, ]
@@ -214,8 +214,8 @@ class AtomicData(torch_geometric.data.Data):
                 [[1.0, 1.0, 1.0]], dtype=torch.get_default_dtype()
             )
         elif len(dipole_weight.shape) == 1:
-            dipole_weight = dipole_weight.unsqueeze(0)        
-        
+            dipole_weight = dipole_weight.unsqueeze(0)
+
         charges_weight = (
             torch.tensor(
                 config.property_weights.get("charges"), dtype=torch.get_default_dtype()
@@ -223,15 +223,18 @@ class AtomicData(torch_geometric.data.Data):
             if config.property_weights.get("charges") is not None
             else torch.tensor(1.0, dtype=torch.get_default_dtype())
         )
-        
+
         polarizability_weight = (
-            torch.tensor(config.property_weights.get("polarizability"), dtype=torch.get_default_dtype())
+            torch.tensor(
+                config.property_weights.get("polarizability"),
+                dtype=torch.get_default_dtype(),
+            )
             if config.property_weights.get("polarizability") is not None
             else torch.tensor(1.0, dtype=torch.get_default_dtype())
         )
         ##### check here if it needs to be changed! I am assuming the  Atomic dipol mode has changed and therefore also the dipole wight, i guess
         ##### we have to adjust the polarizability weight to the new dipole weight
-        
+
         forces = (
             torch.tensor(
                 config.properties.get("forces"), dtype=torch.get_default_dtype()
@@ -280,14 +283,16 @@ class AtomicData(torch_geometric.data.Data):
         )
 
         total_charge = (
-            torch.tensor(config.properties.get("total_charge"), dtype=torch.get_default_dtype())
+            torch.tensor(
+                config.properties.get("total_charge"), dtype=torch.get_default_dtype()
+            )
             if config.properties.get("total_charge") is not None
             else torch.tensor(0.0, dtype=torch.get_default_dtype())
         )
         polarizability = (
-            torch.tensor(config.properties.get("polarizability"), dtype=torch.get_default_dtype()).view(
-                1, 3, 3
-            )
+            torch.tensor(
+                config.properties.get("polarizability"), dtype=torch.get_default_dtype()
+            ).view(1, 3, 3)
             if config.properties.get("polarizability") is not None
             else torch.zeros(1, 3, 3, dtype=torch.get_default_dtype())
         )

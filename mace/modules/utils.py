@@ -15,7 +15,6 @@ from scipy.constants import c, e
 from mace.tools import to_numpy
 from mace.tools.scatter import scatter_mean, scatter_std, scatter_sum
 from mace.tools.torch_geometric.batch import Batch
-from mace.tools.compile import simplify_if_compile
 
 from .blocks import AtomicEnergiesBlock
 
@@ -489,17 +488,18 @@ def compute_fixed_charge_dipole(
     return scatter_sum(
         src=mu, index=batch.unsqueeze(-1), dim=0, dim_size=num_graphs
     )  # [N_graphs,3]
-    
+
+
 def compute_fixed_charge_dipole_polar(
     charges: torch.Tensor,
     positions: torch.Tensor,
     batch: torch.Tensor,
     num_graphs: int,
 ) -> torch.Tensor:
-    mu = positions * charges.unsqueeze(-1) #/ (1e-11 / c / e)  # [N_atoms,3] = 0.20819...
-    return scatter_sum(
-        src=mu, index=batch.unsqueeze(-1), dim=0, dim_size=num_graphs
-    )
+    mu = positions * charges.unsqueeze(
+        -1
+    )  # / (1e-11 / c / e)  # [N_atoms,3] = 0.20819...
+    return scatter_sum(src=mu, index=batch.unsqueeze(-1), dim=0, dim_size=num_graphs)
 
 
 @torch.jit.ignore

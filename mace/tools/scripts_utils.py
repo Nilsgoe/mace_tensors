@@ -220,7 +220,9 @@ def print_git_commit():
 
 
 def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
-    if model.__class__.__name__ != "ScaleShiftMACE": #not in ["ScaleShiftMACE", "AtomicDielectricMACE"]
+    if (
+        model.__class__.__name__ != "ScaleShiftMACE"
+    ):  # not in ["ScaleShiftMACE", "AtomicDielectricMACE"]
         return {"error": "Model is not a ScaleShiftMACE model"}
 
     def radial_to_name(radial_type):
@@ -240,8 +242,9 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         if radial.distance_transform.__class__.__name__ == "SoftTransform":
             return "Soft"
         return radial.distance_transform.__class__.__name__
+
     scale = model.scale_shift.scale
-    print("\nIS DIPOLE ALSO here? ",scale,"\n")
+    print("\nIS DIPOLE ALSO here? ", scale, "\n")
     shift = model.scale_shift.shift
     heads = model.heads if hasattr(model, "heads") else ["default"]
     model_mlp_irreps = (
@@ -297,12 +300,12 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         "atomic_inter_shift": shift.cpu().numpy(),
         "heads": heads,
     }
-    
+
     if model.__class__.__name__ == "AtomicDielectricMACE":
         config["use_polarizability"] = model.use_polarizability
-        config["only_dipole"] =False # model.only_dipole
+        config["only_dipole"] = False  # model.only_dipole
         config["gate"] = torch.nn.functional.silu
-        
+
     return config
 
 
@@ -568,11 +571,6 @@ def get_loss_fn(
     args: argparse.Namespace,
     dipole_only: bool,
     compute_dipole: bool,
-    dipole_mean: Optional[float] = None,
-    dipole_std: Optional[float] = None,
-    polarizability_mean: Optional[float] = None,
-    polarizability_std: Optional[float] = None,
-
 ) -> torch.nn.Module:
     if args.loss == "weighted":
         loss_fn = modules.WeightedEnergyForcesLoss(
@@ -612,8 +610,8 @@ def get_loss_fn(
             forces_weight=args.forces_weight,
         )
     elif args.loss == "dipole":
-        #print("The dipole is:",dipole_only)
-        #exit()
+        # print("The dipole is:",dipole_only)
+        # exit()
         assert (
             dipole_only is True
         ), "dipole loss can only be used with AtomicDipolesMACE model"
@@ -621,18 +619,18 @@ def get_loss_fn(
             dipole_weight=args.dipole_weight,
         )
     elif args.loss == "dipole_polar":
-        #print("The dipole is:",dipole_only)
-        #exit()
+        # print("The dipole is:",dipole_only)
+        # exit()
         assert (
             dipole_only is True
         ), "dipole_polar loss can only be used with AtomicDielectricMACE model"
         loss_fn = modules.DipolePolarLoss(
             dipole_weight=args.dipole_weight,
             polarizability_weight=args.polarizability_weight,
-            #dipole_mean=dipole_mean,
-            #dipole_std=dipole_std,  
-            #polarizability_mean= polarizability_mean,
-            #polarizability_std= polarizability_std,
+            # dipole_mean=dipole_mean,
+            # dipole_std=dipole_std,
+            # polarizability_mean= polarizability_mean,
+            # polarizability_std= polarizability_std,
         )
     elif args.loss == "energy_forces_dipole":
         assert dipole_only is False and compute_dipole is True
@@ -653,8 +651,8 @@ def get_swa(
     swas: List[bool],
     dipole_only: bool = False,
 ):
-    print("\n \n \ndipoleonly is:",dipole_only)
-    #assert dipole_only is False, "Stage Two for dipole fitting not implemented"
+    print("\n \n \ndipoleonly is:", dipole_only)
+    # assert dipole_only is False, "Stage Two for dipole fitting not implemented"
     swas.append(True)
     if args.start_swa is None:
         args.start_swa = max(1, args.max_num_epochs // 4 * 3)

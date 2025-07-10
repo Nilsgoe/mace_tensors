@@ -146,44 +146,21 @@ def mean_normed_error_forces(
 # Dipole Loss Function
 # ------------------------------------------------------------------------------
 
-def weighted_mean_squared_error_dipole(
-    ref: Batch, pred: TensorDict, ddp: Optional[bool] = None#, mean: Optional[torch.Tensor] = None , std: Optional[torch.Tensor] = None
-) -> torch.Tensor:
-    #ref_dipole = ref["dipole"] *std + mean if mean is not None and std is not None else ref["dipole"]
-    #print("Here some infos about the dipole loss and validation:",ref_dipole - pred["dipole"],ref_dipole,pred["dipole"])
-    num_atoms = (ref.ptr[1:] - ref.ptr[:-1]).unsqueeze(-1)
-    #print("Ref in loss",ref["dipole"],pred["dipole"])
-    #exit()
-    raw_loss = torch.square((ref["dipole"] - pred["dipole"]) / num_atoms)
-    return reduce_loss(raw_loss, ddp)
-'''
+
 def weighted_mean_squared_error_dipole(
     ref: Batch,
     pred: TensorDict,
-    ddp: Optional[bool] = None,
-    mean: Optional[torch.Tensor] = None,
-    std: Optional[torch.Tensor] = None,
+    ddp: Optional[
+        bool
+    ] = None,  # , mean: Optional[torch.Tensor] = None , std: Optional[torch.Tensor] = None
 ) -> torch.Tensor:
-    # Use per-dipole normalization constants; ensure they have the right shape
-    if mean is not None and std is not None:
-        # Broadcast to match ref["dipole"] shape: [n_graphs, 3]
-        mean = mean.view(1, -1)
-        std = std.view(1, -1)
-
-        # Denormalize both predictions and references
-        ref_dipole = ref["dipole"] * std + mean
-        pred_dipole = pred["dipole"] * std + mean
-    else:
-        # No normalization was applied, just use as-is
-        ref_dipole = ref["dipole"]
-        pred_dipole = pred["dipole"]
-
-    # Now compute weighted MSE based on number of atoms per graph
-    num_atoms = (ref.ptr[1:] - ref.ptr[:-1]).unsqueeze(-1)  # shape: [n_graphs, 1]
-    raw_loss = torch.square((ref_dipole - pred_dipole) / num_atoms)
-
+    # ref_dipole = ref["dipole"] *std + mean if mean is not None and std is not None else ref["dipole"]
+    # print("Here some infos about the dipole loss and validation:",ref_dipole - pred["dipole"],ref_dipole,pred["dipole"])
+    num_atoms = (ref.ptr[1:] - ref.ptr[:-1]).unsqueeze(-1)
+    # print("Ref in loss",ref["dipole"],pred["dipole"])
+    # exit()
+    raw_loss = torch.square((ref["dipole"] - pred["dipole"]) / num_atoms)
     return reduce_loss(raw_loss, ddp)
-'''
 
 
 # ------------------------------------------------------------------------------
@@ -192,34 +169,19 @@ def weighted_mean_squared_error_dipole(
 
 
 def weighted_mean_squared_error_polarizability(
-    ref: Batch, pred: TensorDict, ddp: Optional[bool] = None# ,mean: Optional[torch.Tensor] = None , std: Optional[torch.Tensor] = None
-) -> torch.Tensor:
-    # polarizability: [n_graphs, ]
-    #ref_polar = ref["polarizability"].view(-1, 3, 3) * std.view(1, 3, 3) + mean.view(1, 3, 3) if mean is not None and std is not None else ref["polarizability"]
-    num_atoms = (ref.ptr[1:] - ref.ptr[:-1]).view(-1, 1, 1)  # [n_graphs,1]
-    raw_loss = torch.square((ref["polarizability"].view(-1, 3, 3) - pred["polarizability"]) / num_atoms)
-    return reduce_loss(raw_loss, ddp)
-'''def weighted_mean_squared_error_polarizability(
     ref: Batch,
     pred: TensorDict,
-    ddp: Optional[bool] = None,
-    mean: Optional[torch.Tensor] = None,
-    std: Optional[torch.Tensor] = None,
+    ddp: Optional[
+        bool
+    ] = None,  # ,mean: Optional[torch.Tensor] = None , std: Optional[torch.Tensor] = None
 ) -> torch.Tensor:
-    # Denormalize if mean and std are provided
-    if mean is not None and std is not None:
-        # Shapes: ref["polarizability"] is [n_graphs, 3, 3]
-        ref_denorm = ref["polarizability"] * std.view(1, 3, 3) + mean.view(1, 3, 3)
-        pred_denorm = pred["polarizability"] * std.view(1, 3, 3) + mean.view(1, 3, 3)
-    else:
-        ref_denorm = ref["polarizability"]
-        pred_denorm = pred["polarizability"]
-
-    num_atoms = (ref.ptr[1:] - ref.ptr[:-1]).view(-1, 1, 1)  # [n_graphs, 1, 1]
-    raw_loss = torch.square((ref_denorm - pred_denorm) / num_atoms)
-    return reduce_loss(raw_loss, ddp)'''
-
-
+    # polarizability: [n_graphs, ]
+    # ref_polar = ref["polarizability"].view(-1, 3, 3) * std.view(1, 3, 3) + mean.view(1, 3, 3) if mean is not None and std is not None else ref["polarizability"]
+    num_atoms = (ref.ptr[1:] - ref.ptr[:-1]).view(-1, 1, 1)  # [n_graphs,1]
+    raw_loss = torch.square(
+        (ref["polarizability"].view(-1, 3, 3) - pred["polarizability"]) / num_atoms
+    )
+    return reduce_loss(raw_loss, ddp)
 
 
 # ------------------------------------------------------------------------------
@@ -573,7 +535,11 @@ class DipoleSingleLoss(torch.nn.Module):
 
 
 class DipolePolarLoss(torch.nn.Module):
-    def __init__(self, dipole_weight=1.0,polarizability_weight=1.0) -> None: #dipole_mean=None,dipole_std=None,polarizability_mean=None,polarizability_std=None
+    def __init__(
+        self, dipole_weight=1.0, polarizability_weight=1.0
+    ) -> (
+        None
+    ):  # dipole_mean=None,dipole_std=None,polarizability_mean=None,polarizability_std=None
         super().__init__()
         self.register_buffer(
             "dipole_weight",
@@ -584,39 +550,27 @@ class DipolePolarLoss(torch.nn.Module):
             torch.tensor(polarizability_weight, dtype=torch.get_default_dtype()),
         )
 
-        '''self.register_buffer(
-            "dipole_mean",
-            torch.tensor(dipole_mean, dtype=torch.get_default_dtype()),
-        )
-        self.register_buffer(
-            "dipole_std",
-            torch.tensor(dipole_std, dtype=torch.get_default_dtype()),
-        )
-        self.register_buffer(
-            "polarizability_mean",
-            torch.tensor(polarizability_mean, dtype=torch.get_default_dtype()),
-        )
-        self.register_buffer(
-            "polarizability_std",
-            torch.tensor(polarizability_std, dtype=torch.get_default_dtype()),
-        )'''
-
-    def forward(self, ref: Batch, pred: TensorDict, ddp: Optional[bool] = None
+    def forward(
+        self, ref: Batch, pred: TensorDict, ddp: Optional[bool] = None
     ) -> torch.Tensor:
-        loss_dipole = (
-            weighted_mean_squared_error_dipole(ref, pred, ddp)#,self.dipole_mean,self.dipole_std) #* 100.0
-        ) # scale adjustment
-        
-        loss_polarizability = (
-            weighted_mean_squared_error_polarizability(ref, pred, ddp)#,self.polarizability_mean,self.polarizability_std) #* 100.0
-        )  # scale adjustment  
-        return self.dipole_weight * loss_dipole + self.polarizability_weight * loss_polarizability
+        loss_dipole = weighted_mean_squared_error_dipole(
+            ref, pred, ddp
+        )  # ,self.dipole_mean,self.dipole_std) #* 100.0  # scale adjustment
+
+        loss_polarizability = weighted_mean_squared_error_polarizability(
+            ref, pred, ddp
+        )  # ,self.polarizability_mean,self.polarizability_std) #* 100.0  # scale adjustment
+        return (
+            self.dipole_weight * loss_dipole
+            + self.polarizability_weight * loss_polarizability
+        )
 
     def __repr__(self):
         return (
             f"{self.__class__.__name__}("
             f"dipole_weight={self.dipole_weight:.3f}, polarizability_weight={self.polarizability_weight:.3f})"
         )
+
 
 class WeightedEnergyForcesDipoleLoss(torch.nn.Module):
     def __init__(self, energy_weight=1.0, forces_weight=1.0, dipole_weight=1.0) -> None:

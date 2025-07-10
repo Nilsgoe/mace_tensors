@@ -11,19 +11,19 @@ from e3nn import o3
 from e3nn.util.jit import compile_mode
 
 from mace.modules.radial import ZBLBasis
-from mace.tools.scatter import scatter_sum, scatter_mean
+from mace.tools.scatter import scatter_mean, scatter_sum
 from mace.tools.torch_tools import spherical_to_cartesian
 
 from .blocks import (
     AtomicEnergiesBlock,
     EquivariantProductBasisBlock,
     InteractionBlock,
-    LinearDipoleReadoutBlock,
     LinearDipolePolarReadoutBlock,
+    LinearDipoleReadoutBlock,
     LinearNodeEmbeddingBlock,
     LinearReadoutBlock,
-    NonLinearDipoleReadoutBlock,
     NonLinearDipolePolarReadoutBlock,
+    NonLinearDipoleReadoutBlock,
     NonLinearReadoutBlock,
     RadialEmbeddingBlock,
     ScaleShiftBlock,
@@ -709,10 +709,10 @@ class AtomicDipolesMACE(torch.nn.Module):
                 sc=sc,
                 node_attrs=data["node_attrs"],
             )
-            
+
             node_dipoles = readout(node_feats).squeeze(-1)  # [n_nodes,3]
-            #print(node_dipoles.shape)
-            #exit()
+            # print(node_dipoles.shape)
+            # exit()
             dipoles.append(node_dipoles)
 
         # Compute the dipoles
@@ -732,7 +732,7 @@ class AtomicDipolesMACE(torch.nn.Module):
             batch=data["batch"],
             num_graphs=num_graphs,
         )  # [n_graphs,3]
-        
+
         total_dipole = total_dipole + baseline
 
         output = {
@@ -740,6 +740,7 @@ class AtomicDipolesMACE(torch.nn.Module):
             "atomic_dipoles": atomic_dipoles,
         }
         return output
+
 
 @compile_mode("script")
 class AtomicDielectricMACE(torch.nn.Module):
@@ -783,14 +784,17 @@ class AtomicDielectricMACE(torch.nn.Module):
         self.register_buffer(
             "num_interactions", torch.tensor(num_interactions, dtype=torch.int64)
         )
-        
+
         # Predefine buffers to be TorchScript-safe
         self.register_buffer("dipole_mean", torch.zeros(3))
         self.register_buffer("dipole_std", torch.ones(3))
-        self.register_buffer("polarizability_mean", torch.zeros(3,3))  # 3x3 matrix flattened
-        self.register_buffer("polarizability_std", torch.ones(3,3))
-        #self.register_buffer("mean_polarizability_sh", torch.zeros(6))
-        #self.register_buffer("std_polarizability_sh", torch.ones(6))
+        self.register_buffer(
+            "polarizability_mean", torch.zeros(3, 3)
+        )  # 3x3 matrix flattened
+        self.use_polarizability = use_polarizability
+        self.register_buffer("polarizability_std", torch.ones(3, 3))
+        # self.register_buffer("mean_polarizability_sh", torch.zeros(6))
+        # self.register_buffer("std_polarizability_sh", torch.ones(6))
         if means_stds is not None:
             if "dipole_mean" in means_stds:
                 self.dipole_mean.data.copy_(means_stds["dipole_mean"])
@@ -800,13 +804,13 @@ class AtomicDielectricMACE(torch.nn.Module):
                 self.polarizability_mean.data.copy_(means_stds["polarizability_mean"])
             if "polarizability_std" in means_stds:
                 self.polarizability_std.data.copy_(means_stds["polarizability_std"])
-            #if "mean_polarizability_sh" in means_stds:
+            # if "mean_polarizability_sh" in means_stds:
             #    self.mean_polarizability_sh.data.copy_(means_stds["mean_polarizability_sh"])
-            #if "std_polarizability_sh" in means_stds:
+            # if "std_polarizability_sh" in means_stds:
             #    self.std_polarizability_sh.data.copy_(means_stds["std_polarizability_sh"])'''
         assert atomic_energies is None
-        #self.use_polarizability = use_polarizability
-        #self.use_dipole = use_dipole
+        # self.use_polarizability = use_polarizability
+        # self.use_dipole = use_dipole
 
         # Embedding
         node_attr_irreps = o3.Irreps([(num_elements, (0, 1))])
@@ -860,9 +864,9 @@ class AtomicDielectricMACE(torch.nn.Module):
         self.products = torch.nn.ModuleList([prod])
 
         self.readouts = torch.nn.ModuleList()
-        self.readouts.append(LinearDipolePolarReadoutBlock(
-            hidden_irreps,
-            use_polarizability=True))
+        self.readouts.append(
+            LinearDipolePolarReadoutBlock(hidden_irreps, use_polarizability=True)
+        )
 
         for i in range(num_interactions - 1):
             if i == num_interactions - 2:
@@ -870,10 +874,12 @@ class AtomicDielectricMACE(torch.nn.Module):
                 assert (
                     len(hidden_irreps) > 1
                 ), "To predict dipoles use at least l=1 hidden_irreps"
-            # hidden_irreps_out = str(
-            #     hidden_irreps[1]
-            # )  # Select only l=1 vectors for last layer
-                hidden_irreps_out = hidden_irreps #this is different in the AtomicDipoleMACE
+                # hidden_irreps_out = str(
+                #     hidden_irreps[1]
+                # )  # Select only l=1 vectors for last layer
+                hidden_irreps_out = (
+                    hidden_irreps  # this is different in the AtomicDipoleMACE
+                )
             else:
                 hidden_irreps_out = hidden_irreps
             inter = interaction_cls(
@@ -904,13 +910,13 @@ class AtomicDielectricMACE(torch.nn.Module):
                         use_polarizability=True,
                     )
                 )
-                #print("Nonlinear irrpes: ", hidden_irreps_out, MLP_irreps)
-                #exit()
+                # print("Nonlinear irrpes: ", hidden_irreps_out, MLP_irreps)
+                # exit()
             else:
                 self.readouts.append(
                     LinearDipolePolarReadoutBlock(
                         hidden_irreps,
-                        #use_charge=True,
+                        # use_charge=True,
                         use_polarizability=True,
                     )
                 )
@@ -964,40 +970,40 @@ class AtomicDielectricMACE(torch.nn.Module):
                 edge_index=data["edge_index"],
                 cutoff=cutoff,
             )
-            #print("node_feats shape: ", node_feats.shape)
+            # print("node_feats shape: ", node_feats.shape)
             node_feats = product(
                 node_feats=node_feats,
                 sc=sc,
                 node_attrs=data["node_attrs"],
             )
-            #print("node_feats shape after product: ", node_feats.shape)
+            # print("node_feats shape after product: ", node_feats.shape)
             node_out = readout(node_feats).squeeze(-1)  # [n_nodes,3]
-            #print("node_out shape: ", node_out.shape)
+            # print("node_out shape: ", node_out.shape)
             charges.append(node_out[:, 0])
-            #print(charges)
-            #print(data["charges"])
-            #exit()
-            #print("node_out shape: ", node_out.shape)
-            if True: #self.use_polarizability:
+            # print(charges)
+            # print(data["charges"])
+            # exit()
+            # print("node_out shape: ", node_out.shape)
+            if self.use_polarizability:
                 node_dipoles = node_out[:, 1:4]
-                #print("node_out shape: ", node_out.shape)
-                #print(node_dipoles.shape)
-                #exit()
+                # print("node_out shape: ", node_out.shape)
+                # print(node_dipoles.shape)
+                # exit()
                 node_polarizability = torch.cat(
                     (node_out[:, 1].unsqueeze(-1), node_out[:, 5:]), dim=-1
                 )
                 polarizabilities.append(node_polarizability)
                 dipoles.append(node_dipoles)
-                #print("node_dipoles shape: ", node_dipoles.shape)
-                #print("node_polarizability shape: ", node_polarizability.shape)
-                #exit()
-            #if self.use_dipole and not self.use_polarizability:
+                # print("node_dipoles shape: ", node_dipoles.shape)
+                # print("node_polarizability shape: ", node_polarizability.shape)
+                # exit()
+            # if self.use_dipole and not self.use_polarizability:
             #    node_dipoles = node_out[:, 1:4]
             #    dipoles.append(node_dipoles)
-            #else:
-                #dipoles.append(torch.zeros_like(data["positions"]))
+            # else:
+            # dipoles.append(torch.zeros_like(data["positions"]))
         # Compute the dipoles
-        #print(len(dipoles),dipoles[0].shape , len(polarizabilities))
+        # print(len(dipoles),dipoles[0].shape , len(polarizabilities))
         contributions_dipoles = torch.stack(
             dipoles, dim=-1
         )  # [n_nodes,3,n_contributions]
@@ -1015,14 +1021,14 @@ class AtomicDielectricMACE(torch.nn.Module):
             dim_size=num_graphs,
         )  # [n_graphs,3]
         baseline = compute_fixed_charge_dipole_polar(
-            charges=atomic_charges, #or data["charges"], ?????
+            charges=atomic_charges,  # or data["charges"], ?????
             positions=data["positions"],
             batch=data["batch"],
             num_graphs=num_graphs,
         )  # [n_graphs,3]
         total_dipole = total_dipole + baseline
 
-        if True:#self.use_polarizability:
+        if self.use_polarizability:
             # Compute the polarizabilities
             contributions_polarizabilities = torch.stack(
                 polarizabilities, dim=-1
@@ -1063,35 +1069,6 @@ class AtomicDielectricMACE(torch.nn.Module):
             total_polarizability = None
             total_polarizability_spherical = None
             dalpha_dr = None
-
-        # =====================
-        # Denormalization begins
-        # =====================
-        
-        """print(total_dipole.shape, self.dipole_std.shape, self.dipole_mean.shape)    
-        print("Total dipole: ", total_dipole, "Dipole std: ", self.dipole_std, "Dipole mean: ", self.dipole_mean)
-        total_dipole = total_dipole * self.dipole_std + self.dipole_mean
-        print("Back to normal dipole: ", total_dipole)
-        if dmu_dr is not None:
-            print("Yes we do calc derivatives of mu")
-            dmu_dr = dmu_dr * self.dipole_std.view(1, 1, 3)
-
-        print(total_polarizability.shape, self.polarizability_std.shape, self.polarizability_mean.shape)
-        total_polarizability = total_polarizability.view(-1, 9)
-        total_polarizability = total_polarizability * self.polarizability_std + self.polarizability_mean
-        total_polarizability = total_polarizability.view(-1, 3, 3)
-        total_polarizability = spherical_to_cartesian(
-                total_polarizability_spherical
-            )
-        if dalpha_dr is not None:
-            print("Yes we do calc derivatives of alpha")
-            dalpha_dr = dalpha_dr * self.polarizability_std.view(1, 1, 9)
-
-        '''if hasattr(self, "std_polarizability_sh") and self.std_polarizability_sh is not None:
-            total_polarizability_spherical = (
-                total_polarizability_spherical * self.means_stds["polar_std"] + self.means_stds["polar_mean"]
-        )'''"""
-
 
         output = {
             "charges": atomic_charges,

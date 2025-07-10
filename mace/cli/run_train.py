@@ -474,7 +474,7 @@ def run(args) -> None:
         args.compute_stress = False
     elif args.model == "AtomicDielectricMACE":
         atomic_energies = None
-        dipole_only = True
+        dipole_only = False
         args.compute_dipole = True
         #print("\nDipole:",dipole_only, args.compute_dipole,"\n")
         #exit()
@@ -543,7 +543,7 @@ def run(args) -> None:
             raise ValueError(f"No valid training datasets found for head {head_config.head_name}")
 
         train_sets[head_config.head_name] = combine_datasets(train_datasets, head_config.head_name)
-       
+
         if head_config.valid_file:
             valid_datasets = []
 
@@ -587,7 +587,8 @@ def run(args) -> None:
             ]
         if not valid_sets[head_config.head_name]:
             raise ValueError(f"No valid datasets found for head {head_config.head_name}, please provide a valid_file or a valid_fraction")
-        if args.normalize_dipole_polar==True:
+        means_std_dipole_polar=None
+        if args.normalize_dipole_polar is True:
             dipoles=[]
             polarizabilities=[]
             for train_set in train_sets[head_config.head_name]:
@@ -600,9 +601,9 @@ def run(args) -> None:
             #    dipoles.append(train_set["dipole"])
             #    polarizabilities.append(train_set["polarizability"])
 
-            print("\n\n\nLength sets:",len(dipoles), len(polarizabilities))     
+            print("\n\n\nLength sets:",len(dipoles), len(polarizabilities))
             dipoles = torch.cat(dipoles, dim=0)  # shape: [total_samples, 3]
-            polarizabilities = torch.cat(polarizabilities, dim=0)  # shape: [total_samples, ...]    
+            polarizabilities = torch.cat(polarizabilities, dim=0)  # shape: [total_samples, ...]
             dipoles_mean = dipoles.mean(axis=0)
             dipoles_std  = dipoles.std(axis=0)
             polarizabilities_mean = polarizabilities.mean(axis=0)
@@ -617,8 +618,8 @@ def run(args) -> None:
                 #print(train_set["dipole"])
                 train_set["polarizability"] = (train_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
                 #exit()
-        
-        
+
+
             for valid_set in valid_sets[head_config.head_name]:
                 #print(train_set["dipole"])
                 valid_set["dipole"] = (valid_set["dipole"] - dipoles_mean) / dipoles_std
@@ -693,7 +694,7 @@ def run(args) -> None:
         )
     #print(args,args.key_specification)
     #print(train_loader)
-    
+
 
     loss_fn = get_loss_fn(args, dipole_only, args.compute_dipole) #,means_std_dipole_polar["dipole_mean"], means_std_dipole_polar["dipole_std"], means_std_dipole_polar["polarizability_mean"], means_std_dipole_polar["polarizability_std"])
     args.avg_num_neighbors = get_avg_num_neighbors(head_configs, args, train_loader, device)
@@ -953,7 +954,6 @@ def run(args) -> None:
             logging.info(f"Loaded Stage one model from epoch {epoch} for evaluation")
 
         if rank == 0:
-            print(f"\n Dipole is here \n")
             # Save entire model
             if swa_eval:
                 model_path = Path(args.checkpoints_dir) / (tag + "_stagetwo.model")
@@ -961,12 +961,10 @@ def run(args) -> None:
                 model_path = Path(args.checkpoints_dir) / (tag + ".model")
             logging.info(f"Saving model to {model_path}")
             model_to_save = deepcopy(model)
-            print(f"\n Dipole is here 1\n")
             if args.enable_cueq and not args.only_cueq:
                 print("RUNING CUEQ TO E3NN")
                 print("swa_eval", swa_eval)
                 model_to_save = run_cueq_to_e3nn(deepcopy(model), device=device)
-            print(f"\n Dipole is here 2\n")
             if args.save_cpu:
                 model_to_save = model_to_save.to("cpu")
             torch.save(model_to_save, model_path)
@@ -976,7 +974,6 @@ def run(args) -> None:
                     convert_to_json_format(extract_config_mace_model(model))
                 ),
             }
-            print(f"\n Dipole is here 3 \n")
             if swa_eval:
                 torch.save(
                     model_to_save, Path(args.model_dir) / (args.name + "_stagetwo.model")
@@ -1046,7 +1043,7 @@ def run(args) -> None:
                 dipole_mean= means_std_dipole_polar["dipole_mean"],
                 dipole_std= means_std_dipole_polar["dipole_std"],
                 polarizability_mean= means_std_dipole_polar["polarizability_mean"],
-                polarizability_std= means_std_dipole_polar["polarizability_std"],                
+                polarizability_std= means_std_dipole_polar["polarizability_std"],
             )
             logging.info("Error-table on TEST:\n" + str(table_test))
         if args.plot:

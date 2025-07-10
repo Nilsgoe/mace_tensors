@@ -178,18 +178,19 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
         x = self.equivariant_nonlin(self.linear_1(x))
         return self.linear_2(x)  # [n_nodes, 1]
 
+
 @compile_mode("script")
 class LinearDipolePolarReadoutBlock(torch.nn.Module):
     def __init__(
         self,
         irreps_in: o3.Irreps,
-        use_polarizability: bool = False,
+        use_polarizability: bool = True,
         cueq_config: Optional[CuEquivarianceConfig] = None,
         oeq_config: Optional[OEQConfig] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         if use_polarizability:
-            print("You will calculate the polarizability and dipole.")  
+            print("You will calculate the polarizability and dipole.")
             self.irreps_out = o3.Irreps("2x0e + 1x1o + 1x2e")
         else:
             raise ValueError(
@@ -197,13 +198,13 @@ class LinearDipolePolarReadoutBlock(torch.nn.Module):
                 "use_polarizability must be either True."
                 "If you want to calculate only the dipole, use AtomicDipolesMACE."
             )
-        
+
         self.linear = Linear(
             irreps_in=irreps_in, irreps_out=self.irreps_out, cueq_config=cueq_config
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # [n_nodes, irreps]  # [..., ]
-        y =  self.linear(x)  # [n_nodes, 1]
+        y = self.linear(x)  # [n_nodes, 1]
         return y  # [n_nodes, 1]
 
 
@@ -214,14 +215,14 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         MLP_irreps: o3.Irreps,
         gate: Callable,
-        use_polarizability: bool = False,
+        use_polarizability: bool = True,
         cueq_config: Optional[CuEquivarianceConfig] = None,
         oeq_config: Optional[OEQConfig] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.hidden_irreps = MLP_irreps
         if use_polarizability:
-            print("You will calculate the polarizability and dipole.")  
+            print("You will calculate the polarizability and dipole.")
             self.irreps_out = o3.Irreps("2x0e + 1x1o + 1x2e")
         else:
             raise ValueError(
@@ -256,6 +257,7 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # [n_nodes, irreps]  # [..., ]
         x = self.equivariant_nonlin(self.linear_1(x))
         return self.linear_2(x)  # [n_nodes, 1]
+
 
 @compile_mode("script")
 class AtomicEnergiesBlock(torch.nn.Module):

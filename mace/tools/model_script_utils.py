@@ -67,8 +67,9 @@ def configure_model(
                 )
         args.std = atomic_inter_scale
 
-    elif (args.mean is None or args.std is None) and (args.model != "AtomicDipolesMACE" and args.model != "AtomicDielectricMACE"):
-        print(args.model, ((args.mean is None or args.std is None) and (args.model != "AtomicDipolesMACE" or args.model != "AtomicDielectricMACE")))
+    elif (args.mean is None or args.std is None) and (
+        args.model not in ("AtomicDipolesMACE", "AtomicDielectricMACE")
+    ):
         args.mean, args.std = modules.scaling_classes[args.scaling](
             train_loader, atomic_energies
         )
@@ -176,7 +177,9 @@ def configure_model(
         )
         model_config_foundation = None
 
-    model = _build_model(args, model_config, model_config_foundation, heads,means_stds=means_stds)
+    model = _build_model(
+        args, model_config, model_config_foundation, heads, means_stds=means_stds
+    )
 
     if model_foundation is not None:
         model = load_foundations_elements(
@@ -207,7 +210,7 @@ def _determine_atomic_inter_shift(mean, heads):
 
 
 def _build_model(
-    args, model_config, model_config_foundation, heads,means_stds=None
+    args, model_config, model_config_foundation, heads, means_stds=None
 ):  # pylint: disable=too-many-return-statements
     if args.model == "MACE":
         if args.interaction_first not in [
@@ -268,9 +271,12 @@ def _build_model(
     if args.model == "AtomicDielectricMACE":
         args.error_table = "DipolePolarRMSE"
         # std_df = modules.scaling_classes["rms_dipoles_scaling"](train_loader)
-        assert args.loss == "dipole_polar", "Use dipole_polar loss with AtomicDielectricMACE model"
         assert (
-            args.error_table == "DipoleRMSE" or args.error_table == "DipolePolarRMSE"
+            args.loss == "dipole_polar"
+        ), "Use dipole_polar loss with AtomicDielectricMACE model"
+        assert args.error_table in (
+            "DipoleRMSE",
+            "DipolePolarRMSE",
         ), "Use error_table DipoleRMSE with AtomicDielectricMACE model"
         return modules.AtomicDielectricMACE(
             **model_config,
@@ -282,9 +288,6 @@ def _build_model(
             MLP_irreps=o3.Irreps(args.MLP_irreps),
             use_polarizability=True,
             means_stds=means_stds,
-            #use_dipole=args.compute_atomic_dipole,
-            # dipole_scale=1,
-            # dipole_shift=0,
         )
     if args.model == "EnergyDipolesMACE":
         assert (

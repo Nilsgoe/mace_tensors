@@ -6,12 +6,12 @@ from .blocks import (
     AtomicEnergiesBlock,
     EquivariantProductBasisBlock,
     InteractionBlock,
-    LinearDipoleReadoutBlock,
     LinearDipolePolarReadoutBlock,
+    LinearDipoleReadoutBlock,
     LinearNodeEmbeddingBlock,
     LinearReadoutBlock,
-    NonLinearDipoleReadoutBlock,
     NonLinearDipolePolarReadoutBlock,
+    NonLinearDipoleReadoutBlock,
     NonLinearReadoutBlock,
     RadialEmbeddingBlock,
     RealAgnosticAttResidualInteractionBlock,
@@ -22,8 +22,8 @@ from .blocks import (
     ScaleShiftBlock,
 )
 from .loss import (
-    DipoleSingleLoss,
     DipolePolarLoss,
+    DipoleSingleLoss,
     UniversalLoss,
     WeightedEnergyForcesDipoleLoss,
     WeightedEnergyForcesL1L2Loss,
@@ -33,7 +33,13 @@ from .loss import (
     WeightedForcesLoss,
     WeightedHuberEnergyForcesStressLoss,
 )
-from .models import MACE, AtomicDipolesMACE, AtomicDielectricMACE, EnergyDipolesMACE, ScaleShiftMACE
+from .models import (
+    MACE,
+    AtomicDielectricMACE,
+    AtomicDipolesMACE,
+    EnergyDipolesMACE,
+    ScaleShiftMACE,
+)
 from .radial import BesselBasis, GaussianBasis, PolynomialCutoff, ZBLBasis
 from .symmetric_contraction import SymmetricContraction
 from .utils import (

@@ -624,7 +624,7 @@ def build_default_arg_parser() -> argparse.ArgumentParser:
         help="weight of polarizability loss",
         type=float,
         default=1.0,
-    )    
+    )
     parser.add_argument(
         "--config_type_weights",
         help="String of dictionary containing the weights for each config type",

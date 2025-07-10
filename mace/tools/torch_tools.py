@@ -7,7 +7,6 @@
 import logging
 from contextlib import contextmanager
 from typing import Dict, Union
-from functools import partial
 
 import numpy as np
 import torch
@@ -98,6 +97,7 @@ def cartesian_to_spherical(t: torch.Tensor):
     """
     change_of_basis: torch.Tensor = change_of_basis.to(t.device)
     return torch.einsum("ijk,...jk->...i", change_of_basis, t)
+
 
 def voigt_to_matrix(t: torch.Tensor):
     """
