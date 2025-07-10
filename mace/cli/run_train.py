@@ -590,44 +590,45 @@ def run(args) -> None:
             ]
         if not valid_sets[head_config.head_name]:
             raise ValueError(f"No valid datasets found for head {head_config.head_name}, please provide a valid_file or a valid_fraction")
-        dipoles=[]
-        polarizabilities=[]
-        for train_set in train_sets[head_config.head_name]:
-            #print(train_set["polarizability"])
-            dipoles.append(train_set["dipole"])
-            polarizabilities.append(train_set["polarizability"])
-        ### also using the valid sets would bias the data
-        #for train_set in valid_sets[head_config.head_name]:
-            #print(train_set["polarizability"])
-        #    dipoles.append(train_set["dipole"])
-        #    polarizabilities.append(train_set["polarizability"])
+        if args.normalize_dipole_polar==True:
+            dipoles=[]
+            polarizabilities=[]
+            for train_set in train_sets[head_config.head_name]:
+                #print(train_set["polarizability"])
+                dipoles.append(train_set["dipole"])
+                polarizabilities.append(train_set["polarizability"])
+            ### also using the valid sets would bias the data
+            #for train_set in valid_sets[head_config.head_name]:
+                #print(train_set["polarizability"])
+            #    dipoles.append(train_set["dipole"])
+            #    polarizabilities.append(train_set["polarizability"])
 
-        print("\n\n\nLength sets:",len(dipoles), len(polarizabilities))     
-        dipoles = torch.cat(dipoles, dim=0)  # shape: [total_samples, 3]
-        polarizabilities = torch.cat(polarizabilities, dim=0)  # shape: [total_samples, ...]    
-        dipoles_mean = dipoles.mean(axis=0)
-        dipoles_std  = dipoles.std(axis=0)
-        polarizabilities_mean = polarizabilities.mean(axis=0)
-        polarizabilities_std  = polarizabilities.std(axis=0)
-        means_std_dipole_polar={"dipole_mean": dipoles_mean, "dipole_std": dipoles_std, "polarizability_mean": polarizabilities_mean, "polarizability_std": polarizabilities_std}
-        logging.info(f"Mean dipole: {dipoles_mean}, std: {dipoles_std}")
-        logging.info(f"Mean polarizability: {polarizabilities_mean}, std: {polarizabilities_std}")
-        print("Normalizing dipoles and polarizabilities for head:", head_config.head_name)
-        for train_set in train_sets[head_config.head_name]:
-            #print(train_set["dipole"])
-            train_set["dipole"] = (train_set["dipole"] - dipoles_mean) / dipoles_std
-            print(train_set["dipole"])
-            train_set["polarizability"] = (train_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
-            #exit()
+            print("\n\n\nLength sets:",len(dipoles), len(polarizabilities))     
+            dipoles = torch.cat(dipoles, dim=0)  # shape: [total_samples, 3]
+            polarizabilities = torch.cat(polarizabilities, dim=0)  # shape: [total_samples, ...]    
+            dipoles_mean = dipoles.mean(axis=0)
+            dipoles_std  = dipoles.std(axis=0)
+            polarizabilities_mean = polarizabilities.mean(axis=0)
+            polarizabilities_std  = polarizabilities.std(axis=0)
+            means_std_dipole_polar={"dipole_mean": dipoles_mean, "dipole_std": dipoles_std, "polarizability_mean": polarizabilities_mean, "polarizability_std": polarizabilities_std}
+            logging.info(f"Mean dipole: {dipoles_mean}, std: {dipoles_std}")
+            logging.info(f"Mean polarizability: {polarizabilities_mean}, std: {polarizabilities_std}")
+            print("Normalizing dipoles and polarizabilities for head:", head_config.head_name)
+            for train_set in train_sets[head_config.head_name]:
+                #print(train_set["dipole"])
+                train_set["dipole"] = (train_set["dipole"] - dipoles_mean) / dipoles_std
+                #print(train_set["dipole"])
+                train_set["polarizability"] = (train_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
+                #exit()
         
         
-        for valid_set in valid_sets[head_config.head_name]:
-            #print(train_set["dipole"])
-            valid_set["dipole"] = (valid_set["dipole"] - dipoles_mean) / dipoles_std
-            #print(train_set["dipole"])
-            valid_set["polarizability"] = (valid_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
-            #exit()
-        #scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
+            for valid_set in valid_sets[head_config.head_name]:
+                #print(train_set["dipole"])
+                valid_set["dipole"] = (valid_set["dipole"] - dipoles_mean) / dipoles_std
+                #print(train_set["dipole"])
+                valid_set["polarizability"] = (valid_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
+                #exit()
+            #scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
         # Create data loader for this head
         if isinstance(train_sets[head_config.head_name], list):
             dataset_size = len(train_sets[head_config.head_name])
