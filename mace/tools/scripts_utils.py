@@ -300,7 +300,7 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
     
     if model.__class__.__name__ == "AtomicDielectricMACE":
         config["use_polarizability"] = model.use_polarizability
-        config["only_dipole"] =True# model.only_dipole
+        config["only_dipole"] =False # model.only_dipole
         config["gate"] = torch.nn.functional.silu
         
     return config

@@ -19,9 +19,11 @@ from .blocks import (
     EquivariantProductBasisBlock,
     InteractionBlock,
     LinearDipoleReadoutBlock,
+    LinearDipolePolarReadoutBlock,
     LinearNodeEmbeddingBlock,
     LinearReadoutBlock,
     NonLinearDipoleReadoutBlock,
+    NonLinearDipolePolarReadoutBlock,
     NonLinearReadoutBlock,
     RadialEmbeddingBlock,
     ScaleShiftBlock,
@@ -858,8 +860,8 @@ class AtomicDielectricMACE(torch.nn.Module):
         self.products = torch.nn.ModuleList([prod])
 
         self.readouts = torch.nn.ModuleList()
-        self.readouts.append(LinearDipoleReadoutBlock(
-            hidden_irreps, dipole_only=True,
+        self.readouts.append(LinearDipolePolarReadoutBlock(
+            hidden_irreps,
             use_polarizability=True))
 
         for i in range(num_interactions - 1):
@@ -895,11 +897,10 @@ class AtomicDielectricMACE(torch.nn.Module):
             self.products.append(prod)
             if i == num_interactions - 2:
                 self.readouts.append(
-                    NonLinearDipoleReadoutBlock(
+                    NonLinearDipolePolarReadoutBlock(
                         hidden_irreps_out,
                         MLP_irreps,
                         gate,
-                        dipole_only=True,
                         use_polarizability=True,
                     )
                 )
@@ -907,10 +908,9 @@ class AtomicDielectricMACE(torch.nn.Module):
                 #exit()
             else:
                 self.readouts.append(
-                    LinearDipoleReadoutBlock(
+                    LinearDipolePolarReadoutBlock(
                         hidden_irreps,
                         #use_charge=True,
-                        dipole_only=True,
                         use_polarizability=True,
                     )
                 )

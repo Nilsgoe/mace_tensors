@@ -127,7 +127,7 @@ class MACECalculator(Calculator):
             self.implemented_properties = ["dipole"]#,"charges"
         elif model_type == "DipolePolarizabilityMACE":
             self.implemented_properties = [
-                #"charges",
+                "charges",
                 "dipole",
                 "polarizability",
                 #"polarizability_sh",
@@ -304,19 +304,19 @@ class MACECalculator(Calculator):
                 }
             )
         if model_type in ["EnergyDipoleMACE", "DipoleMACE","DipolePolarizabilityMACE"]:
-            charges = torch.zeros(num_models, num_atoms, device=self.device)
             dipole = torch.zeros(num_models, 3, device=self.device)
             dict_of_tensors.update(
                 {
-                    "charges": charges,
                     "dipole": dipole,
                 }
             )
         if model_type in ["DipolePolarizabilityMACE"]:
+            charges = torch.zeros(num_models, num_atoms, device=self.device)
             polarizability = torch.zeros(num_models, 3, 3, device=self.device)
             polarizability_sh = torch.zeros(num_models, 6, device=self.device)
             dict_of_tensors.update(
                 {
+                    "charges": charges,
                     "polarizability": polarizability,
                     "polarizability_sh": polarizability_sh,
                 }
@@ -401,9 +401,9 @@ class MACECalculator(Calculator):
                 "EnergyDipoleMACE",
                 "DipolePolarizabilityMACE",
             ]:
-                #ret_tensors["charges"][i] = out["charges"].detach()
                 ret_tensors["dipole"][i] = out["dipole"].detach()
             if self.model_type == "DipolePolarizabilityMACE":
+                ret_tensors["charges"][i] = out["charges"].detach()
                 ret_tensors["polarizability"][i] = out["polarizability"].detach()
                 ret_tensors["polarizability_sh"][i] = out["polarizability_sh"].detach()
             if self.model_type in ["MACE"]:
