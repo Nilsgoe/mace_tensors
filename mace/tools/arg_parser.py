@@ -89,7 +89,12 @@ def build_default_arg_parser() -> argparse.ArgumentParser:
         type=str2bool,
         default=True,
     )
-
+    parser.add_argument(
+        "--normalize_dipole_polar",
+        help="Normalize dipole and polarizability",
+        type=str2bool,
+        default=False,
+    )
     parser.add_argument(
         "--plot_frequency",
         help="Set plotting frequency: '0' for only at the end or an integer N to plot every N epochs.",
