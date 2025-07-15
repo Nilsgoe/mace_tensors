@@ -65,6 +65,25 @@ from mace.tools.scripts_utils import (
 from mace.tools.slurm_distributed import DistributedEnvironment
 from mace.tools.tables_utils import create_error_table
 from mace.tools.utils import AtomicNumberTable
+from copy import deepcopy
+import torch.utils as tutils
+
+class NormalizeOnFlyDataset(tutils.data.Dataset):
+    def __init__(self, base_dataset, dipole_mean, dipole_std, polar_mean, polar_std):
+        self.base_dataset = base_dataset
+        self.dipole_mean = dipole_mean
+        self.dipole_std = dipole_std
+        self.polar_mean = polar_mean
+        self.polar_std = polar_std
+
+    def __getitem__(self, idx):
+        data = deepcopy(self.base_dataset[idx])  # copy to avoid modifying original
+        data.dipole = (data.dipole - self.dipole_mean) / self.dipole_std
+        data.polarizability = (data.polarizability - self.polar_mean) / self.polar_std
+        return data
+
+    def __len__(self):
+        return len(self.base_dataset)
 
 
 def main() -> None:
@@ -612,20 +631,29 @@ def run(args) -> None:
             logging.info(f"Mean dipole: {dipoles_mean}, std: {dipoles_std}")
             logging.info(f"Mean polarizability: {polarizabilities_mean}, std: {polarizabilities_std}")
             print("Normalizing dipoles and polarizabilities for head:", head_config.head_name)
-            for train_set in train_sets[head_config.head_name]:
-                #print(train_set["dipole"])
+            '''for train_set in train_sets[head_config.head_name].datasets:
+                print(train_set)
+                exit()
+                #print(head_config.head_name)
                 train_set["dipole"] = (train_set["dipole"] - dipoles_mean) / dipoles_std
-                #print(train_set["dipole"])
+                #print("Before:",train_set["polarizability"])
                 train_set["polarizability"] = (train_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
-                #exit()
+                #print("After:",train_set["polarizability"])'''
+           
+            normalized_datasets = [
+                NormalizeOnFlyDataset(ds, dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
+                for ds in train_sets[head_config.head_name].datasets
+            ]
 
+            train_sets[head_config.head_name] = tutils.data.ConcatDataset(normalized_datasets)
 
-            for valid_set in valid_sets[head_config.head_name]:
-                #print(train_set["dipole"])
-                valid_set["dipole"] = (valid_set["dipole"] - dipoles_mean) / dipoles_std
-                #print(train_set["dipole"])
-                valid_set["polarizability"] = (valid_set["polarizability"] - polarizabilities_mean) / polarizabilities_std
-                #exit()
+            normalized_val_datasets = [
+                NormalizeOnFlyDataset(ds, dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
+                for ds in valid_sets[head_config.head_name].datasets
+            ]
+
+            valid_sets[head_config.head_name] = tutils.data.ConcatDataset(normalized_val_datasets)
+            
             #scale_shift=(dipoles_mean, dipoles_std, polarizabilities_mean, polarizabilities_std)
         # Create data loader for this head
         if isinstance(train_sets[head_config.head_name], list):
@@ -896,6 +924,7 @@ def run(args) -> None:
                     )
                     for config in subset
                 ]
+        logging.info(f"Time for the test dir {head_config.test_dir}")
         if head_config.test_dir is not None:
             if not args.multi_processed_test:
                 test_files = get_files_with_suffix(head_config.test_dir, "_test.h5")
@@ -904,6 +933,13 @@ def run(args) -> None:
                     test_sets[name] = data.HDF5Dataset(
                         test_file, r_max=args.r_max, z_table=z_table, heads=heads, head=head_config.head_name
                     )
+                    if args.normalize_dipole_polar is True:
+                        logging.info(f"Normalizing the test sets {name}")
+                        for i in range(len(test_sets[name])):
+                            test_example = test_sets[name][i]
+                            test_example["dipole"] = (test_example["dipole"] - dipoles_mean) / dipoles_std
+                            test_example["polarizability"] = (test_example["polarizability"] - polarizabilities_mean) / polarizabilities_std        
+
             else:
                 test_folders = glob(head_config.test_dir + "/*")
                 for folder in test_folders:

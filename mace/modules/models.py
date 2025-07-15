@@ -12,7 +12,7 @@ from e3nn.util.jit import compile_mode
 
 from mace.modules.radial import ZBLBasis
 from mace.tools.scatter import scatter_mean, scatter_sum
-from mace.tools.torch_tools import spherical_to_cartesian
+from mace.tools.torch_tools import spherical_to_cartesian,get_change_of_basis
 
 from .blocks import (
     AtomicEnergiesBlock,
@@ -793,6 +793,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         )  # 3x3 matrix flattened
         self.use_polarizability = use_polarizability
         self.register_buffer("polarizability_std", torch.ones(3, 3))
+        self.register_buffer("change_of_basis", get_change_of_basis())
         # self.register_buffer("mean_polarizability_sh", torch.zeros(6))
         # self.register_buffer("std_polarizability_sh", torch.ones(6))
         if means_stds is not None:
@@ -1043,7 +1044,7 @@ class AtomicDielectricMACE(torch.nn.Module):
                 dim_size=num_graphs,
             )  # [n_graphs,6]
             total_polarizability = spherical_to_cartesian(
-                total_polarizability_spherical
+                total_polarizability_spherical, self.change_of_basis
             )
 
             if compute_dielectric_derivatives:

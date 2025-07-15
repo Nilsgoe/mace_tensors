@@ -266,6 +266,12 @@ class MACECalculator(Calculator):
         for model in self.models:
             for param in model.parameters():
                 param.requires_grad = False
+        print("the state dict of the model is:")
+        print(self.models[0].state_dict().keys())
+        print(self.models[0].state_dict()["dipole_mean"])
+        print(self.models[0].state_dict()["dipole_std"])
+        print(self.models[0].state_dict()["polarizability_mean"])
+        print(self.models[0].state_dict()["polarizability_std"])    
         try:
             if model.state_dict()["dipole_mean"] is not None:
                 self.dipole_mean = model.state_dict()["dipole_mean"].to(self.device)
@@ -510,10 +516,11 @@ class MACECalculator(Calculator):
         if self.model_type in [
             "DipolePolarizabilityMACE",
         ]:
+            
             self.results["polarizability"] = (
                 torch.mean(ret_tensors["polarizability"], dim=0).cpu().numpy()
-                * self.polarizability_std.cpu().numpy()
-                + self.polarizability_mean.cpu().numpy()
+                #* self.polarizability_std.cpu().numpy()
+                #+ self.polarizability_mean.cpu().numpy()
             )
             self.results["polarizability_sh"] = (
                 torch.mean(ret_tensors["polarizability_sh"], dim=0).cpu().numpy()

@@ -101,7 +101,7 @@ def create_error_table(
             "config_type",
             "RMSE MU / me A / atom",
             "relative MU RMSE %",
-            "RMSE ALPHA e / A^3",
+            "RMSE ALPHA e A^2 / V / atom",
         ]
     elif table_type == "EnergyDipoleRMSE":
         table.field_names = [

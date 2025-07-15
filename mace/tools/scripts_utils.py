@@ -621,9 +621,9 @@ def get_loss_fn(
     elif args.loss == "dipole_polar":
         # print("The dipole is:",dipole_only)
         # exit()
-        assert (
-            dipole_only is True
-        ), "dipole_polar loss can only be used with AtomicDielectricMACE model"
+        #assert (
+        #    dipole_only is True
+        #), "dipole_polar loss can only be used with AtomicDielectricMACE model"
         loss_fn = modules.DipolePolarLoss(
             dipole_weight=args.dipole_weight,
             polarizability_weight=args.polarizability_weight,
