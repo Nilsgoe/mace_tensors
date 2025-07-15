@@ -930,15 +930,21 @@ def run(args) -> None:
                 test_files = get_files_with_suffix(head_config.test_dir, "_test.h5")
                 for test_file in test_files:
                     name = os.path.splitext(os.path.basename(test_file))[0]
-                    test_sets[name] = data.HDF5Dataset(
+                    base_test_dataset = data.HDF5Dataset(
                         test_file, r_max=args.r_max, z_table=z_table, heads=heads, head=head_config.head_name
                     )
-                    if args.normalize_dipole_polar is True:
+                    if args.normalize_dipole_polar:
                         logging.info(f"Normalizing the test sets {name}")
-                        for i in range(len(test_sets[name])):
-                            test_example = test_sets[name][i]
-                            test_example["dipole"] = (test_example["dipole"] - dipoles_mean) / dipoles_std
-                            test_example["polarizability"] = (test_example["polarizability"] - polarizabilities_mean) / polarizabilities_std        
+                        # Wrap with normalization wrapper
+                        test_sets[name] = NormalizeOnFlyDataset(
+                            base_test_dataset,
+                            dipoles_mean,
+                            dipoles_std,
+                            polarizabilities_mean,
+                            polarizabilities_std,
+                        )
+                    else:
+                        test_sets[name] = base_test_dataset        
 
             else:
                 test_folders = glob(head_config.test_dir + "/*")
