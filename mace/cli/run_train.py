@@ -606,7 +606,7 @@ def run(args) -> None:
             ]
         if not valid_sets[head_config.head_name]:
             raise ValueError(f"No valid datasets found for head {head_config.head_name}, please provide a valid_file or a valid_fraction")
-        means_std_dipole_polar=None
+        means_std_dipole_polar={"dipole_mean": torch.zeros(3), "dipole_std": torch.ones(3), "polarizability_mean": torch.zeros(3,3), "polarizability_std": torch.ones(3,3)}
         if args.normalize_dipole_polar is True:
             dipoles=[]
             polarizabilities=[]

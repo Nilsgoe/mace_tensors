@@ -519,8 +519,8 @@ class MACECalculator(Calculator):
             
             self.results["polarizability"] = (
                 torch.mean(ret_tensors["polarizability"], dim=0).cpu().numpy()
-                * self.polarizability_std.cpu().numpy()
-                + self.polarizability_mean.cpu().numpy()
+                #* self.polarizability_std.cpu().numpy()
+                #+ self.polarizability_mean.cpu().numpy()
             )
             self.results["polarizability_sh"] = (
                 torch.mean(ret_tensors["polarizability_sh"], dim=0).cpu().numpy()
