@@ -986,7 +986,7 @@ class AtomicDielectricMACE(torch.nn.Module):
             # exit()
             # print("node_out shape: ", node_out.shape)
             if self.use_polarizability:
-                node_dipoles = node_out[:, 1:4]
+                node_dipoles = node_out[:, 2:5]
                 # print("node_out shape: ", node_out.shape)
                 # print(node_dipoles.shape)
                 # exit()
