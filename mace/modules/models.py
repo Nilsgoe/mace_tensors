@@ -841,10 +841,9 @@ class AtomicDielectricMACE(torch.nn.Module):
         atomic_numbers: List[int],
         correlation: int,
         gate: Optional[Callable],
-        atomic_energies: Optional[
-            None
-        ],  # Just here to make it compatible with energy models, MUST be None
+        atomic_energies: Optional[None] = None,  # Just here to make it compatible with energy models, MUST be None
         apply_cutoff: bool = True,  # pylint: disable=unused-argument
+        use_agnostic_product: bool = False,  # pylint: disable=unused-argument
         use_reduced_cg: bool = True,  # pylint: disable=unused-argument
         use_so3: bool = False,  # pylint: disable=unused-argument
         distance_transform: str = "None",  # pylint: disable=unused-argument
@@ -856,6 +855,13 @@ class AtomicDielectricMACE(torch.nn.Module):
         dipole_only: Optional[bool] = True,  # pylint: disable=unused-argument
         use_polarizability: Optional[bool] = True,  # pylint: disable=unused-argument
         means_stds: Optional[Dict[str, torch.Tensor]] = None,  # pylint: disable=W0613
+        use_last_readout_only: bool = False,# pylint: disable=unused-argument
+        use_embedding_readout: bool = False,  # pylint: disable=unused-argument
+        readout_cls: Optional[Callable] = None,  # pylint: disable=unused-argument
+        pair_repulsion: bool = False, # pylint: disable=unused-argument
+        heads: Optional[List[str]] = None, # pylint: disable=unused-argument
+        only_dipole: bool = False,  # pylint: disable=unused-argument
+        atomic_energies_fn: Optional[Callable] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.register_buffer(
@@ -875,8 +881,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         self.use_polarizability = use_polarizability
         self.register_buffer("polarizability_std", torch.ones(3, 3))
         self.register_buffer("change_of_basis", get_change_of_basis())
-        # self.register_buffer("mean_polarizability_sh", torch.zeros(6))
-        # self.register_buffer("std_polarizability_sh", torch.ones(6))
+        
         if means_stds is not None:
             if "dipole_mean" in means_stds:
                 self.dipole_mean.data.copy_(means_stds["dipole_mean"])
@@ -898,7 +903,9 @@ class AtomicDielectricMACE(torch.nn.Module):
         node_attr_irreps = o3.Irreps([(num_elements, (0, 1))])
         node_feats_irreps = o3.Irreps([(hidden_irreps.count(o3.Irrep(0, 1)), (0, 1))])
         self.node_embedding = LinearNodeEmbeddingBlock(
-            irreps_in=node_attr_irreps, irreps_out=node_feats_irreps
+            irreps_in=node_attr_irreps,
+            irreps_out=node_feats_irreps,
+            cueq_config=cueq_config,
         )
         self.radial_embedding = RadialEmbeddingBlock(
             r_max=r_max,
@@ -927,6 +934,7 @@ class AtomicDielectricMACE(torch.nn.Module):
             hidden_irreps=hidden_irreps,
             avg_num_neighbors=avg_num_neighbors,
             radial_MLP=radial_MLP,
+            cueq_config=cueq_config,
         )
         self.interactions = torch.nn.ModuleList([inter])
 
@@ -942,12 +950,16 @@ class AtomicDielectricMACE(torch.nn.Module):
             correlation=correlation,
             num_elements=num_elements,
             use_sc=use_sc_first,
-        )
+            cueq_config=cueq_config,
+        )#should one add use_agnostic_product and use reduced_cg here?
         self.products = torch.nn.ModuleList([prod])
 
         self.readouts = torch.nn.ModuleList()
         self.readouts.append(
-            LinearDipolePolarReadoutBlock(hidden_irreps, use_polarizability=True)
+            LinearDipolePolarReadoutBlock(hidden_irreps,
+                                          use_polarizability=True,
+                                          cueq_config=cueq_config,
+                                          )
         )
 
         for i in range(num_interactions - 1):
@@ -973,6 +985,7 @@ class AtomicDielectricMACE(torch.nn.Module):
                 hidden_irreps=hidden_irreps_out,
                 avg_num_neighbors=avg_num_neighbors,
                 radial_MLP=radial_MLP,
+                cueq_config=cueq_config,
             )
             self.interactions.append(inter)
             prod = EquivariantProductBasisBlock(
@@ -981,7 +994,8 @@ class AtomicDielectricMACE(torch.nn.Module):
                 correlation=correlation,
                 num_elements=num_elements,
                 use_sc=True,
-            )
+                cueq_config=cueq_config,
+            )#here also possible to use agnostic product and reduced_cg
             self.products.append(prod)
             if i == num_interactions - 2:
                 self.readouts.append(
@@ -990,6 +1004,7 @@ class AtomicDielectricMACE(torch.nn.Module):
                         MLP_irreps,
                         gate,
                         use_polarizability=True,
+                        cueq_config=cueq_config,
                     )
                 )
                 # print("Nonlinear irrpes: ", hidden_irreps_out, MLP_irreps)
@@ -1000,6 +1015,7 @@ class AtomicDielectricMACE(torch.nn.Module):
                         hidden_irreps,
                         # use_charge=True,
                         use_polarizability=True,
+                        cueq_config=cueq_config,
                     )
                 )
 

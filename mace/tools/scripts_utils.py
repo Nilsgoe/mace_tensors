@@ -223,8 +223,8 @@ def print_git_commit():
 
 
 def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
-    if model.__class__.__name__ not in ["ScaleShiftMACE", "MACELES"]:
-        return {"error": "Model is not a ScaleShiftMACE or MACELES model"}
+    if model.__class__.__name__ not in ["ScaleShiftMACE", "MACELES", "AtomicDielectricMACE"]:
+        return {"error": "Model is not a ScaleShiftMACE, MACELES or AtomicDielectricMACE model"}
 
     def radial_to_name(radial_type):
         if radial_type == "BesselBasis":
@@ -243,9 +243,10 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         if radial.distance_transform.__class__.__name__ == "SoftTransform":
             return "Soft"
         return radial.distance_transform.__class__.__name__
-
-    scale = model.scale_shift.scale
-    shift = model.scale_shift.shift
+    
+    if  model.__class__.__name__  in ["ScaleShiftMACE", "MACELES"]:
+        scale = model.scale_shift.scale
+        shift = model.scale_shift.shift
     heads = model.heads if hasattr(model, "heads") else ["default"]
     model_mlp_irreps = (
         o3.Irreps(str(model.readouts[-1].hidden_irreps))
@@ -269,18 +270,6 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         "num_elements": len(model.atomic_numbers),
         "hidden_irreps": o3.Irreps(str(model.products[0].linear.irreps_out)),
         "edge_irreps": model.edge_irreps if hasattr(model, "edge_irreps") else None,
-        "MLP_irreps": (
-            o3.Irreps(f"{model_mlp_irreps.count((0, 1)) // len(heads)}x0e")
-            if model.num_interactions.item() > 1
-            else 1
-        ),
-        "gate": (
-            model.readouts[-1]  # pylint: disable=protected-access
-            .non_linearity._modules["acts"][0]
-            .f
-            if model.num_interactions.item() > 1
-            else None
-        ),
         "use_reduced_cg": (
             model.use_reduced_cg if hasattr(model, "use_reduced_cg") else False
         ),
@@ -298,7 +287,6 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         "use_embedding_readout": (hasattr(model, "embedding_readout")),
         "readout_cls": model.readouts[-1].__class__,
         "cueq_config": model.cueq_config if hasattr(model, "cueq_config") else None,
-        "atomic_energies": model.atomic_energies_fn.atomic_energies.cpu().numpy(),
         "avg_num_neighbors": model.interactions[0].avg_num_neighbors,
         "atomic_numbers": model.atomic_numbers,
         "correlation": correlation,
@@ -312,14 +300,28 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         "radial_MLP": model.interactions[0].conv_tp_weights.hs[1:-1],
         "pair_repulsion": hasattr(model, "pair_repulsion_fn"),
         "distance_transform": radial_to_transform(model.radial_embedding),
-        "atomic_inter_scale": scale.cpu().numpy(),
-        "atomic_inter_shift": shift.cpu().numpy(),
         "heads": heads,
     }
+    if model.__class__.__name__ in ["ScaleShiftMACE","MACELES"]:
+        config["gate"]=(model.readouts[-1]  # pylint: disable=protected-access
+            .non_linearity._modules["acts"][0]
+            .f
+            if model.num_interactions.item() > 1
+            else None)
+        config["atomic_energies"] = model.atomic_energies_fn.atomic_energies.cpu().numpy(),
+        config["atomic_inter_scale"] = scale.cpu().numpy()
+        config["atomic_inter_shift"] = shift.cpu().numpy()
+        config["MLP_irreps"] = (
+            o3.Irreps(f"{model_mlp_irreps.count((0, 1)) // len(heads)}x0e")
+            if model.num_interactions.item() > 1
+            else 1
+        )
+        
     if model.__class__.__name__ == "AtomicDielectricMACE":
         config["use_polarizability"] = model.use_polarizability
         config["only_dipole"] = False  # model.only_dipole
         config["gate"] = torch.nn.functional.silu
+        config["MLP_irreps"] = model_mlp_irreps
     return config
 
 

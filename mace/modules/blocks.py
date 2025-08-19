@@ -240,7 +240,9 @@ class LinearDipolePolarReadoutBlock(torch.nn.Module):
             )
 
         self.linear = Linear(
-            irreps_in=irreps_in, irreps_out=self.irreps_out, cueq_config=cueq_config
+            irreps_in=irreps_in,
+            irreps_out=self.irreps_out,
+            cueq_config=cueq_config
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # [n_nodes, irreps]  # [..., ]
@@ -284,9 +286,12 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
             act_gates=[gate] * len(irreps_gates),
             irreps_gated=irreps_gated,
         )
+        self.non_linearity=self.equivariant_nonlin
         self.irreps_nonlin = self.equivariant_nonlin.irreps_in.simplify()
         self.linear_1 = Linear(
-            irreps_in=irreps_in, irreps_out=self.irreps_nonlin, cueq_config=cueq_config
+            irreps_in=irreps_in,
+            irreps_out=self.irreps_nonlin,
+            cueq_config=cueq_config
         )
         self.linear_2 = Linear(
             irreps_in=self.hidden_irreps,

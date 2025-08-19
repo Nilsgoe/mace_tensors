@@ -709,7 +709,7 @@ def run(args) -> None:
         args.enable_oeq = False
     if args.enable_cueq and not args.only_cueq:
         logging.info("Converting model to CUEQ for accelerated training")
-        assert model.__class__.__name__ in ["MACE", "ScaleShiftMACE", "MACELES"]
+        assert model.__class__.__name__ in ["MACE", "ScaleShiftMACE", "MACELES","AtomicDielectricMACE"]
         model = run_e3nn_to_cueq(deepcopy(model), device=device)
     if args.enable_oeq:
         logging.info("Converting model to OEQ for accelerated training")

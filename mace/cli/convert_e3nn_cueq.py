@@ -42,16 +42,14 @@ def reshape_like(src: torch.Tensor, ref_shape: torch.Size) -> torch.Tensor:
 
 
 def get_kmax_pairs(
-    num_product_irreps: int, correlation: int, num_layers: int
+    num_product_irreps: int, correlation: int, num_layers: int, size_mlp: int = 0
 ) -> List[Tuple[int, int]]:
     """Determine kmax pairs based on num_product_irreps and correlation"""
     if correlation == 2:
-        kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
-        kmax_pairs = kmax_pairs + [[num_layers - 1, 0]]
-        return kmax_pairs
+        raise NotImplementedError("Correlation 2 not supported yet")
     if correlation == 3:
         kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
-        kmax_pairs = kmax_pairs + [[num_layers - 1, 0]]
+        kmax_pairs = kmax_pairs + [[num_layers - 1, size_mlp]]
         return kmax_pairs
     raise NotImplementedError(f"Correlation {correlation} not supported")
 
@@ -64,10 +62,13 @@ def transfer_symmetric_contractions(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int = 0,
 ):
     """Transfer symmetric contraction weights"""
-    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers)
-    suffixes = ["_max"] + [f".{i}" for i in range(correlation - 1)]
+    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers,size_mlp)
+    suffixes = [f".{i}" for i in range(correlation - 1)]
+    print("kmax_pairs:", kmax_pairs)
+    #kmax_pairs = [[0,2],[1,2]]
     for i, kmax in kmax_pairs:
         irreps_in = o3.Irreps(
             irrep.ir for irrep in products[i].symmetric_contractions.irreps_in
@@ -110,7 +111,7 @@ def transfer_symmetric_contractions(
             proj = torch.tensor(proj, dtype=wm.dtype, device=wm.device)
             wm = torch.einsum("zau,ab->zbu", wm, proj)
         target_dict[f"products.{i}.symmetric_contractions.weight"] = wm
-
+        
 
 def transfer_weights(
     source_model: torch.nn.Module,
@@ -119,6 +120,7 @@ def transfer_weights(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int = 0,
 ):
     """Transfer weights with proper remapping"""
     # Get source state dict
@@ -135,13 +137,17 @@ def transfer_weights(
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
     transferred_keys = set()
     remaining_keys = (
         set(source_dict.keys()) & set(target_dict.keys()) - transferred_keys
     )
+
     remaining_keys = {k for k in remaining_keys if "symmetric_contraction" not in k}
+    
+    #exit()
     if remaining_keys:
         for key in remaining_keys:
             src = source_dict[key]
@@ -165,9 +171,8 @@ def transfer_weights(
         target_model.interactions[i].avg_num_neighbors = source_model.interactions[
             i
         ].avg_num_neighbors
-
-    # Load state dict into target model
     target_model.load_state_dict(target_dict)
+
 
 
 def run(
@@ -207,7 +212,16 @@ def run(
     # Create new model with cuequivariance config
     logging.info("Creating new model with cuequivariance settings")
     target_model = source_model.__class__(**config).to(device)
-
+    
+    if str(config["MLP_irreps"]) == "16x0e":
+        size_mlp = 0
+    elif str(config["MLP_irreps"]) == "16x0e+16x1o":
+        size_mlp = 1
+    elif str(config["MLP_irreps"]) == "16x0e+16x1o+16x2e":
+        size_mlp = 2
+    else:
+        size_mlp = 0
+        
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]
     transfer_weights(
@@ -217,6 +231,7 @@ def run(
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
     if return_model:
