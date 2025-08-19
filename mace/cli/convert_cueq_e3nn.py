@@ -42,7 +42,7 @@ def reshape_like(src: torch.Tensor, ref_shape: torch.Size) -> torch.Tensor:
 
 
 def get_kmax_pairs(
-    num_product_irreps: int, correlation: int, num_layers: int
+    num_product_irreps: int, correlation: int, num_layers: int, size_mlp: int = 0
 ) -> List[Tuple[int, int]]:
     """Determine kmax pairs based on num_product_irreps and correlation"""
     if correlation == 2:
@@ -51,7 +51,11 @@ def get_kmax_pairs(
         return kmax_pairs
     if correlation == 3:
         kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
-        kmax_pairs = kmax_pairs + [[num_layers - 1, 0]]
+        kmax_pairs = kmax_pairs + [[num_layers - 1, size_mlp]]
+        return kmax_pairs
+    if correlation == 3:
+        kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
+        kmax_pairs = kmax_pairs + [[num_layers - 1, size_mlp]]
         return kmax_pairs
     raise NotImplementedError(f"Correlation {correlation} not supported")
 
@@ -64,9 +68,11 @@ def transfer_symmetric_contractions(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int = 0,
 ):
     """Transfer symmetric contraction weights from CuEq to E3nn format"""
-    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers)
+    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers,size_mlp)
+
     suffixes = ["_max"] + [f".{i}" for i in range(correlation - 1)]
     for i, kmax in kmax_pairs:
         # Get the combined weight tensor from source
@@ -132,12 +138,13 @@ def transfer_weights(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int = 0,
 ):
     """Transfer weights from CuEq to E3nn format"""
     # Get state dicts
     source_dict = source_model.state_dict()
     target_dict = target_model.state_dict()
-
+    
     # Transfer symmetric contractions
     products = target_model.products
     transfer_symmetric_contractions(
@@ -148,6 +155,7 @@ def transfer_weights(
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
     # Transfer remaining matching keys
@@ -210,6 +218,14 @@ def run(input_model, output_model="_e3nn.model", device="cpu", return_model=True
     logging.info("Creating new model without CuEq settings")
     target_model = source_model.__class__(**config)
 
+    if str(config["MLP_irreps"]) == "16x0e":
+        size_mlp = 0
+    elif str(config["MLP_irreps"]) == "16x0e+16x1o":
+        size_mlp = 1
+    elif str(config["MLP_irreps"]) == "16x0e+16x1o+16x2e":
+        size_mlp = 2
+    else:
+        size_mlp = 0
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]
     transfer_weights(
@@ -219,6 +235,7 @@ def run(input_model, output_model="_e3nn.model", device="cpu", return_model=True
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
     if return_model:
