@@ -65,10 +65,10 @@ def transfer_symmetric_contractions(
     size_mlp: int = 0,
 ):
     """Transfer symmetric contraction weights"""
-    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers,size_mlp)
-    suffixes = [f".{i}" for i in range(correlation - 1)]
+    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers, size_mlp)
+    suffixes = ["_max", ".0", ".1"]
     print("kmax_pairs:", kmax_pairs)
-    #kmax_pairs = [[0,2],[1,2]]
+    # kmax_pairs = [[0,2],[1,2]]
     for i, kmax in kmax_pairs:
         irreps_in = o3.Irreps(
             irrep.ir for irrep in products[i].symmetric_contractions.irreps_in
@@ -111,7 +111,7 @@ def transfer_symmetric_contractions(
             proj = torch.tensor(proj, dtype=wm.dtype, device=wm.device)
             wm = torch.einsum("zau,ab->zbu", wm, proj)
         target_dict[f"products.{i}.symmetric_contractions.weight"] = wm
-        
+
 
 def transfer_weights(
     source_model: torch.nn.Module,
@@ -146,8 +146,8 @@ def transfer_weights(
     )
 
     remaining_keys = {k for k in remaining_keys if "symmetric_contraction" not in k}
-    
-    #exit()
+
+    # exit()
     if remaining_keys:
         for key in remaining_keys:
             src = source_dict[key]
@@ -172,7 +172,6 @@ def transfer_weights(
             i
         ].avg_num_neighbors
     target_model.load_state_dict(target_dict)
-
 
 
 def run(
@@ -212,7 +211,7 @@ def run(
     # Create new model with cuequivariance config
     logging.info("Creating new model with cuequivariance settings")
     target_model = source_model.__class__(**config).to(device)
-    
+
     if str(config["MLP_irreps"]) == "16x0e":
         size_mlp = 0
     elif str(config["MLP_irreps"]) == "16x0e+16x1o":
@@ -221,7 +220,7 @@ def run(
         size_mlp = 2
     else:
         size_mlp = 0
-        
+
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]
     transfer_weights(

@@ -71,7 +71,7 @@ def transfer_symmetric_contractions(
     size_mlp: int = 0,
 ):
     """Transfer symmetric contraction weights from CuEq to E3nn format"""
-    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers,size_mlp)
+    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers, size_mlp)
 
     suffixes = ["_max"] + [f".{i}" for i in range(correlation - 1)]
     for i, kmax in kmax_pairs:
@@ -144,7 +144,7 @@ def transfer_weights(
     # Get state dicts
     source_dict = source_model.state_dict()
     target_dict = target_model.state_dict()
-    
+
     # Transfer symmetric contractions
     products = target_model.products
     transfer_symmetric_contractions(

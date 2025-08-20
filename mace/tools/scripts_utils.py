@@ -223,8 +223,14 @@ def print_git_commit():
 
 
 def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
-    if model.__class__.__name__ not in ["ScaleShiftMACE", "MACELES", "AtomicDielectricMACE"]:
-        return {"error": "Model is not a ScaleShiftMACE, MACELES or AtomicDielectricMACE model"}
+    if model.__class__.__name__ not in [
+        "ScaleShiftMACE",
+        "MACELES",
+        "AtomicDielectricMACE",
+    ]:
+        return {
+            "error": "Model is not a ScaleShiftMACE, MACELES or AtomicDielectricMACE model"
+        }
 
     def radial_to_name(radial_type):
         if radial_type == "BesselBasis":
@@ -243,8 +249,8 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         if radial.distance_transform.__class__.__name__ == "SoftTransform":
             return "Soft"
         return radial.distance_transform.__class__.__name__
-    
-    if  model.__class__.__name__  in ["ScaleShiftMACE", "MACELES"]:
+
+    if model.__class__.__name__ in ["ScaleShiftMACE", "MACELES"]:
         scale = model.scale_shift.scale
         shift = model.scale_shift.shift
     heads = model.heads if hasattr(model, "heads") else ["default"]
@@ -302,13 +308,17 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         "distance_transform": radial_to_transform(model.radial_embedding),
         "heads": heads,
     }
-    if model.__class__.__name__ in ["ScaleShiftMACE","MACELES"]:
-        config["gate"]=(model.readouts[-1]  # pylint: disable=protected-access
+    if model.__class__.__name__ in ["ScaleShiftMACE", "MACELES"]:
+        config["gate"] = (
+            model.readouts[-1]  # pylint: disable=protected-access
             .non_linearity._modules["acts"][0]
             .f
             if model.num_interactions.item() > 1
-            else None)
-        config["atomic_energies"] = model.atomic_energies_fn.atomic_energies.cpu().numpy(),
+            else None
+        )
+        config["atomic_energies"] = (
+            model.atomic_energies_fn.atomic_energies.cpu().numpy(),
+        )
         config["atomic_inter_scale"] = scale.cpu().numpy()
         config["atomic_inter_shift"] = shift.cpu().numpy()
         config["MLP_irreps"] = (
@@ -316,7 +326,7 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
             if model.num_interactions.item() > 1
             else 1
         )
-        
+
     if model.__class__.__name__ == "AtomicDielectricMACE":
         config["use_polarizability"] = model.use_polarizability
         config["only_dipole"] = False  # model.only_dipole

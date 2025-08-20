@@ -841,7 +841,9 @@ class AtomicDielectricMACE(torch.nn.Module):
         atomic_numbers: List[int],
         correlation: int,
         gate: Optional[Callable],
-        atomic_energies: Optional[None] = None,  # Just here to make it compatible with energy models, MUST be None
+        atomic_energies: Optional[
+            None
+        ] = None,  # Just here to make it compatible with energy models, MUST be None
         apply_cutoff: bool = True,  # pylint: disable=unused-argument
         use_agnostic_product: bool = False,  # pylint: disable=unused-argument
         use_reduced_cg: bool = True,  # pylint: disable=unused-argument
@@ -855,13 +857,15 @@ class AtomicDielectricMACE(torch.nn.Module):
         dipole_only: Optional[bool] = True,  # pylint: disable=unused-argument
         use_polarizability: Optional[bool] = True,  # pylint: disable=unused-argument
         means_stds: Optional[Dict[str, torch.Tensor]] = None,  # pylint: disable=W0613
-        use_last_readout_only: bool = False,# pylint: disable=unused-argument
+        use_last_readout_only: bool = False,  # pylint: disable=unused-argument
         use_embedding_readout: bool = False,  # pylint: disable=unused-argument
         readout_cls: Optional[Callable] = None,  # pylint: disable=unused-argument
-        pair_repulsion: bool = False, # pylint: disable=unused-argument
-        heads: Optional[List[str]] = None, # pylint: disable=unused-argument
+        pair_repulsion: bool = False,  # pylint: disable=unused-argument
+        heads: Optional[List[str]] = None,  # pylint: disable=unused-argument
         only_dipole: bool = False,  # pylint: disable=unused-argument
-        atomic_energies_fn: Optional[Callable] = None,  # pylint: disable=unused-argument
+        atomic_energies_fn: Optional[  # pylint: disable=unused-argument
+            Callable  # pylint: disable=unused-argument
+        ] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.register_buffer(
@@ -881,7 +885,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         self.use_polarizability = use_polarizability
         self.register_buffer("polarizability_std", torch.ones(3, 3))
         self.register_buffer("change_of_basis", get_change_of_basis())
-        
+
         if means_stds is not None:
             if "dipole_mean" in means_stds:
                 self.dipole_mean.data.copy_(means_stds["dipole_mean"])
@@ -951,15 +955,16 @@ class AtomicDielectricMACE(torch.nn.Module):
             num_elements=num_elements,
             use_sc=use_sc_first,
             cueq_config=cueq_config,
-        )#should one add use_agnostic_product and use reduced_cg here?
+        )  # should one add use_agnostic_product and use reduced_cg here?
         self.products = torch.nn.ModuleList([prod])
 
         self.readouts = torch.nn.ModuleList()
         self.readouts.append(
-            LinearDipolePolarReadoutBlock(hidden_irreps,
-                                          use_polarizability=True,
-                                          cueq_config=cueq_config,
-                                          )
+            LinearDipolePolarReadoutBlock(
+                hidden_irreps,
+                use_polarizability=True,
+                cueq_config=cueq_config,
+            )
         )
 
         for i in range(num_interactions - 1):
@@ -995,7 +1000,7 @@ class AtomicDielectricMACE(torch.nn.Module):
                 num_elements=num_elements,
                 use_sc=True,
                 cueq_config=cueq_config,
-            )#here also possible to use agnostic product and reduced_cg
+            )  # here also possible to use agnostic product and reduced_cg
             self.products.append(prod)
             if i == num_interactions - 2:
                 self.readouts.append(
