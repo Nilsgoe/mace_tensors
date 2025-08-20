@@ -66,7 +66,7 @@ def transfer_symmetric_contractions(
 ):
     """Transfer symmetric contraction weights"""
     kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers, size_mlp)
-    suffixes = ["_max", ".0", ".1"]
+    suffixes = ["_max"] + [f".{i}" for i in range(correlation - 1)]
     print("kmax_pairs:", kmax_pairs)
     # kmax_pairs = [[0,2],[1,2]]
     for i, kmax in kmax_pairs:
