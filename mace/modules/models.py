@@ -866,6 +866,7 @@ class AtomicDielectricMACE(torch.nn.Module):
         atomic_energies_fn: Optional[  # pylint: disable=unused-argument
             Callable  # pylint: disable=unused-argument
         ] = None,  # pylint: disable=unused-argument
+        embedding_specs: Optional[Dict[str, Any]] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.register_buffer(
@@ -902,7 +903,9 @@ class AtomicDielectricMACE(torch.nn.Module):
         assert atomic_energies is None
         # self.use_polarizability = use_polarizability
         # self.use_dipole = use_dipole
-
+        if heads is None:
+            heads = ["Default"]
+        self.heads = heads
         # Embedding
         node_attr_irreps = o3.Irreps([(num_elements, (0, 1))])
         node_feats_irreps = o3.Irreps([(hidden_irreps.count(o3.Irrep(0, 1)), (0, 1))])
