@@ -15,6 +15,8 @@ def load_foundations_elements(
     """
     Load the foundations of a model into a model for fine-tuning.
     """
+    print("Loading foundations...", model_foundations)
+    return model_foundations
     assert model_foundations.r_max == model.r_max
     z_table = AtomicNumberTable([int(z) for z in model_foundations.atomic_numbers])
     model_heads = model.heads
@@ -121,27 +123,33 @@ def load_foundations_elements(
         max_range = max_L + 1 if i == 0 else 1
         for j in range(max_range): # Assuming 3 contractions in symmetric_contractions
             print(j, model.products[i].symmetric_contractions.contractions[j])
-            print(indices_weights)
+            print("indices_weights",indices_weights)
             w = model_foundations.products[i].symmetric_contractions.contractions[j].weights_max
-            print(w.shape)
-            print(w.detach().cpu())
+            print("Shape:",w.shape)
+            print("Shape_f:",model_foundations.products[i]
+                    .symmetric_contractions.contractions[j]
+                    .weights_max.shape)
+            #print("Shape_f_indexed:",model_foundations.products[i]
+            #        .symmetric_contractions.contractions[j]
+            #        .weights_max[indices_weights, :, :].shape)
+            #print(w.detach().cpu())
             #print(model_foundations.products[i].symmetric_contractions.contractions[j].weights_max)#[indices_weights, :, :])
-            exit()
+            
             model.products[i].symmetric_contractions.contractions[j].weights_max = (
                 torch.nn.Parameter(
                     model_foundations.products[i]
                     .symmetric_contractions.contractions[j]
-                    .weights_max[indices_weights, :, :]
+                    .weights_max#[indices_weights, :, :]
                     .clone()
                 )
             )
-
+            
             for k in range(2):  # Assuming 2 weights in each contraction
                 model.products[i].symmetric_contractions.contractions[j].weights[k] = (
                     torch.nn.Parameter(
                         model_foundations.products[i]
                         .symmetric_contractions.contractions[j]
-                        .weights[k][indices_weights, :, :]
+                        .weights[k]#[indices_weights, :, :]
                         .clone()
                     )
                 )
@@ -167,7 +175,9 @@ def load_foundations_elements(
         shape_input_1 = (
             model_foundations.readouts[1].linear_1.__dict__["irreps_out"].num_irreps
         )
+        print("shape_input_1", shape_input_1)
         shape_output_1 = model.readouts[1].linear_1.__dict__["irreps_out"].num_irreps
+        print("shape_output_1", shape_output_1)
         model_readouts_one_linear_1_weight = model.readouts[1].linear_1.weight.clone()
         model_readouts_one_linear_1_weight = (
             model_foundations.readouts[1]
@@ -180,6 +190,8 @@ def load_foundations_elements(
             model_readouts_one_linear_1_weight
         )
         model_readouts_one_linear_2_weight = model.readouts[1].linear_2.weight.clone()
+        print("model_readouts_one_linear_2_weight shape", model_readouts_one_linear_2_weight.shape)
+        print("model_foundations.readouts[1].linear_2.weight shape", model_foundations.readouts[1].linear_2.weight.shape)
         model_readouts_one_linear_2_weight = model_foundations.readouts[
             1
         ].linear_2.weight.view(shape_input_1, -1).repeat(
