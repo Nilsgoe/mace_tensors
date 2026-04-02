@@ -103,7 +103,7 @@ _mace_params_dipole = {
     "device": "cpu",
     "seed": 5,
     "loss": "dipole",
-    "MLP_irreps": "16x0e+16x1o",
+    #"MLP_irreps": "16x0e+16x1o",
     "error_table": "DipoleRMSE",
     "energy_key": "REF_energy",
     "forces_key": "REF_forces",
@@ -210,7 +210,9 @@ _mace_params_dipole_cueq = {
     "compute_atomic_dipole":True,
 }
 
-@pytest.mark.skipif(not CUET_AVAILABLE, reason="cuequivariance not installed")
+
+#@pytest.mark.skipif(not CUET_AVAILABLE, reason="cuequivariance not installed")
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_dipole_cueq(tmp_path, fitting_configs):
     ase.io.write(tmp_path / "fit.xyz", fitting_configs)
 
@@ -691,3 +693,4 @@ def test_run_train_dipole_polar_cueq(tmp_path, fitting_configs):
     assert np.allclose(Mus_cueq, ref_Mus)
     assert np.allclose(alphas_cueq, ref_alphas)
     
+

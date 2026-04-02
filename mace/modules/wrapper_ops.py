@@ -85,9 +85,7 @@ class Linear:
             and cueq_config is not None
             and cueq_config.enabled
             and (cueq_config.optimize_all or cueq_config.optimize_linear)
-            
         ):
-            print("Cue group:",cueq_config.group)
             return cuet.Linear(
                 cue.Irreps(cueq_config.group, irreps_in),
                 cue.Irreps(cueq_config.group, irreps_out),

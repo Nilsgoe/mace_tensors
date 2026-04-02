@@ -2,380 +2,19 @@
 platform linux -- Python 3.12.4, pytest-9.0.2, pluggy-1.6.0
 rootdir: /raven/ptmp/ngoen/mace_tensors_test
 configfile: pyproject.toml
-collected 4 items
+collected 1 item
 
-tests/test_run_train_dipole_polar.py .sFF                                [100%]
+tests/test_run_train_dipole_polar_eq.py F                                [100%]
 
 =================================== FAILURES ===================================
-_________________________ test_run_train_dipole_polar __________________________
+________________ test_run_train_dipole_polar_cueq_with_rotation ________________
 
-tmp_path = PosixPath('/tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar0')
-fitting_configs = [Atoms(symbols='O', pbc=False, cell=[6.0, 6.0, 6.0], calculator=MACECalculator(...)), Atoms(symbols='H', pbc=False, ce...lator(...)), Atoms(symbols='OH2', pbc=True, cell=[4.0, 4.0, 4.0], REF_forces=..., calculator=MACECalculator(...)), ...]
-
-    def test_run_train_dipole_polar(tmp_path, fitting_configs):
-        ase.io.write(tmp_path / "fit.xyz", fitting_configs)
-    
-        mace_params = _mace_params_dipole_polar.copy()
-        mace_params["checkpoints_dir"] = str(tmp_path)
-        mace_params["model_dir"] = str(tmp_path)
-        mace_params["train_file"] = tmp_path / "fit.xyz"
-    
-        # make sure run_train.py is using the mace that is currently being tested
-        run_env = os.environ.copy()
-        sys.path.insert(0, str(Path(__file__).parent.parent))
-        run_env["PYTHONPATH"] = ":".join(sys.path)
-        print("DEBUG subprocess PYTHONPATH", run_env["PYTHONPATH"])
-    
-        cmd = (
-            sys.executable
-            + " "
-            + str(run_train)
-            + " "
-            + " ".join(
-                [
-                    (f"--{k}={v}" if v is not None else f"--{k}")
-                    for k, v in mace_params.items()
-                ]
-            )
-        )
-    
-        p = subprocess.run(cmd.split(), env=run_env, check=True)
-        assert p.returncode == 0
-    
-        calc = MACECalculator(model_paths=tmp_path / "DielectricMACE.model",model_type="DipolePolarizabilityMACE", device="cpu")
-    
-        Mus = []
-        alphas = []
-        for at in fitting_configs:
-            at.calc = calc
-            Mus.append(at.get_dipole_moment())
-            alphas.append(calc.get_property("polarizability", at))
-        # Obtained for MACE from the 08/08/2025
-        print("Mus", Mus)
-        print("alphas", alphas)
-        ref_Mus = [
-            np.array([0., 0., 0.]),
-            np.array([0., 0., 0.]),
-            np.array([-0.00405055,  0.04989444, -0.03235187]),
-            np.array([0.07428956, 0.17534762, 0.0344151 ]),
-            np.array([0.22928963, 0.22789771, 0.01154527]),
-            np.array([ 0.03826594, -0.07032791, -0.04752111]),
-            np.array([-0.01850784, -0.0397861 , -0.02993542]),
-            np.array([-0.08677283, -0.16031447, -0.07839491]),
-            np.array([-0.10964872, -0.016287  , -0.02204037]),
-            np.array([0.07918389, 0.08737918, 0.04145608]),
-            np.array([-0.02907002,  0.01990042, -0.025413  ]),
-            np.array([-0.04857212,  0.07961402, -0.01174765]),
-            np.array([-0.00435445,  0.06191188, -0.01095293]),
-            np.array([ 0.12814346, -0.16236763, -0.08407766]),
-            np.array([0.01998741, 0.06349773, 0.10308535]),
-            np.array([-0.01837022,  0.14428979, -0.08086759]),
-            np.array([-0.01595687, -0.10272478, -0.0236392 ]),
-            np.array([-0.1400921 , -0.087709  , -0.05998242]),
-            np.array([-0.0009531 ,  0.11478384,  0.01394257]),
-            np.array([0.01886107, 0.06399308, 0.03219055]),
-            np.array([-0.0578738 , -0.01193058,  0.09853157]),
-            np.array([0.06845842, 0.55215253, 0.16271066])
-        ]
-    
-        ref_alphas = [
-            np.array([[0., 0., 0.],
-                    [0., 0., 0.],
-                    [0., 0., 0.]]),
-    
-            np.array([[0., 0., 0.],
-                    [0., 0., 0.],
-                    [0., 0., 0.]]),
-    
-            np.array([[-0.01774253,  0.00307792,  0.01980522],
-                    [ 0.00307792, -0.01334953, -0.01574966],
-                    [ 0.01980522, -0.01574966, -0.00921213]]),
-    
-            np.array([[-0.10119078, -0.13912649, -0.06179769],
-                    [-0.13912649,  0.01985949,  0.0011849 ],
-                    [-0.06179769,  0.0011849 ,  0.09128444]]),
-    
-            np.array([[-0.08015337,  0.28906984, -0.05851742],
-                    [ 0.28906984, -0.10814388,  0.05704551],
-                    [-0.05851742,  0.05704551,  0.19103685]]),
-    
-            np.array([[-0.10977471, -0.04570234,  0.28398318],
-                    [-0.04570234,  0.23783969, -0.08478971],
-                    [ 0.28398318, -0.08478971, -0.01218864]]),
-    
-            np.array([[-0.00033354,  0.00791392,  0.01818803],
-                    [ 0.00791392, -0.01052066,  0.01542726],
-                    [ 0.01818803,  0.01542726, -0.02606526]]),
-    
-            np.array([[ 0.1590121 , -0.0117003 ,  0.02571063],
-                    [-0.0117003 , -0.11642923, -0.18587264],
-                    [ 0.02571063, -0.18587264,  0.00499395]]),
-    
-            np.array([[-0.14361682, -0.02639792, -0.04795591],
-                    [-0.02639792,  0.12444872, -0.00903552],
-                    [-0.04795591, -0.00903552,  0.07012009]]),
-    
-            np.array([[-0.02385325,  0.00278218, -0.00900929],
-                    [ 0.00278218, -0.02249226,  0.03559279],
-                    [-0.00900929,  0.03559279, -0.03665955]]),
-    
-            np.array([[ 0.19766853, -0.05722875, -0.15204635],
-                    [-0.05722875,  0.16751105, -0.20498558],
-                    [-0.15204635, -0.20498558, -0.25885304]]),
-    
-            np.array([[-3.33497839e-02,  5.84507102e-03,  1.03779892e-02],
-                    [ 5.84507102e-03, -3.23186866e-02,  8.11547509e-03],
-                    [ 1.03779892e-02,  8.11547509e-03,  5.04013953e-05]]),
-    
-            np.array([[-0.03121629, -0.00526901,  0.00280257],
-                    [-0.00526901, -0.01555394, -0.00570221],
-                    [ 0.00280257, -0.00570221, -0.00175081]]),
-    
-            np.array([[ 0.08495039,  0.20898154,  0.15077567],
-                    [ 0.20898154, -0.06027019, -0.18349961],
-                    [ 0.15077567, -0.18349961,  0.13150356]]),
-    
-            np.array([[ 0.02664201, -0.01412724,  0.01773262],
-                    [-0.01412724, -0.01550847, -0.00363691],
-                    [ 0.01773262, -0.00363691, -0.00834004]]),
-    
-            np.array([[-0.02283877, -0.00013611, -0.01089784],
-                    [-0.00013611, -0.01043637, -0.00651823],
-                    [-0.01089784, -0.00651823, -0.03756097]]),
-    
-            np.array([[ 0.02721329, -0.0434384 ,  0.00925382],
-                    [-0.0434384 , -0.04067187, -0.01123916],
-                    [ 0.00925382, -0.01123916,  0.03137444]]),
-    
-            np.array([[ 0.13941369,  0.1125973 ,  0.0079224 ],
-                    [ 0.1125973 , -0.13189636,  0.07080912],
-                    [ 0.0079224 ,  0.07080912, -0.02471156]]),
-    
-            np.array([[-0.00891008,  0.00219625, -0.00342596],
-                    [ 0.00219625,  0.00338428,  0.00039052],
-                    [-0.00342596,  0.00039052, -0.03264827]]),
-    
-            np.array([[-0.00305826,  0.03268619, -0.00097526],
-                    [ 0.03268619, -0.02749376,  0.02723039],
-                    [-0.00097526,  0.02723039, -0.01024948]]),
-    
-            np.array([[-0.0152999 , -0.01413736,  0.01099587],
-                    [-0.01413736, -0.01621853,  0.01282218],
-                    [ 0.01099587,  0.01282218, -0.02029655]]),
-    
-            np.array([[-0.11326049,  0.00939965, -0.00715356],
-                    [ 0.00939965, -0.2316651 ,  0.03025837],
-                    [-0.00715356,  0.03025837, -0.10757094]])
-    ]
-    
-    
->       assert np.allclose(Mus, ref_Mus)
-E       assert False
-E        +  where False = <function allclose at 0x150280517270>([array([0., 0., 0.]), array([0., 0., 0.]), array([-0.01003683,  0.07920987, -0.05285109]), array([0.0837837 , 0.17283619, 0.03531497]), array([ 0.28194673,  0.28135309, -0.00599769]), array([ 0.04049187, -0.07868273, -0.07127807]), ...], [array([0., 0., 0.]), array([0., 0., 0.]), array([-0.00405055,  0.04989444, -0.03235187]), array([0.07428956, 0.17534762, 0.0344151 ]), array([0.22928963, 0.22789771, 0.01154527]), array([ 0.03826594, -0.07032791, -0.04752111]), ...])
-E        +    where <function allclose at 0x150280517270> = np.allclose
-
-tests/test_run_train_dipole_polar.py:481: AssertionError
----------------------------- Captured stdout setup -----------------------------
--0.22986995777935923
-1.2393429788252843
-0.8769075911230111
-1.5507335435185754
-0.0652978987693415
--0.8955962989131678
--0.8309004805268301
-0.02993297494733048
-1.110908739659707
-0.37736011743265163
--0.9075475280783049
-1.5448594976242958
--0.1862162334955482
-0.21099181169546216
-0.0163983811679152
-0.73006680071724
-0.0020995251183656
-0.6893588524733384
-0.005454790544950142
-0.18529790425534265
------------------------------ Captured stdout call -----------------------------
-DEBUG subprocess PYTHONPATH /raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_alpha_testing/bin:/u/ngoen/Documents/biASE:/u/ngoen/Documents/master_pf:/raven/ptmp/ngoen/mace_tensors_test:/mpcdf/soft/SLE_15/packages/x86_64/python-waterboa/2024.06/lib/python312.zip:/mpcdf/soft/SLE_15/packages/x86_64/python-waterboa/2024.06/lib/python3.12:/mpcdf/soft/SLE_15/packages/x86_64/python-waterboa/2024.06/lib/python3.12/lib-dynload:/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages:/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/setuptools/_vendor:/tmp/tmpkdyj3qbk
-2026-01-15 09:38:30.740 INFO: ===========VERIFYING SETTINGS===========
-2026-01-15 09:38:30.741 INFO: MACE version: 0.3.14
-2026-01-15 09:38:30.741 INFO: Using CPU
-2026-01-15 09:38:30.786 INFO: ===========LOADING INPUT DATA===========
-2026-01-15 09:38:30.786 INFO: Using heads: ['Default']
-2026-01-15 09:38:30.786 INFO: Using the key specifications to parse data:
-2026-01-15 09:38:30.786 INFO: Default: KeySpecification(info_keys={'energy': 'REF_energy', 'stress': 'REF_stress', 'virials': 'REF_virials', 'dipole': 'REF_dipoles', 'head': 'head', 'elec_temp': 'elec_temp', 'total_charge': 'total_charge', 'polarizability': 'REF_polarizability', 'total_spin': 'total_spin'}, arrays_keys={'forces': 'REF_forces', 'charges': 'REF_charges'})
-2026-01-15 09:38:30.786 INFO: =============    Processing head Default     ===========
-2026-01-15 09:38:30.804 INFO: Using isolated atom energies from training file
-2026-01-15 09:38:30.805 INFO: Training set 1/1 [energy: 20, stress: 20, virials: 0, dipole components: 20, head: 20, elec_temp: 0, total_charge: 0, polarizability: 20, total_spin: 0, forces: 20, charges: 0]
-2026-01-15 09:38:30.805 INFO: Total Training set [energy: 20, stress: 20, virials: 0, dipole components: 20, head: 20, elec_temp: 0, total_charge: 0, polarizability: 20, total_spin: 0, forces: 20, charges: 0]
-2026-01-15 09:38:30.805 INFO: No validation set provided, splitting training data instead.
-2026-01-15 09:38:30.805 INFO: Using random 5% of training set for validation with following indices: [8]
-2026-01-15 09:38:30.805 INFO: Random Split Training set [energy: 19, stress: 19, virials: 0, dipole components: 19, head: 19, elec_temp: 0, total_charge: 0, polarizability: 19, total_spin: 0, forces: 19, charges: 0]
-2026-01-15 09:38:30.806 INFO: Random Split Validation set [energy: 1, stress: 1, virials: 0, dipole components: 1, head: 1, elec_temp: 0, total_charge: 0, polarizability: 1, total_spin: 0, forces: 1, charges: 0]
-2026-01-15 09:38:30.806 INFO: Total number of configurations: train=19, valid=1, tests=[],
-2026-01-15 09:38:30.806 WARNING: Validation batch size (10) is larger than the number of validation data (1)
-2026-01-15 09:38:30.806 INFO: Atomic Numbers used: [np.int64(1), np.int64(8)]
-2026-01-15 09:38:30.806 INFO: Processing datasets for head 'Default'
-2026-01-15 09:38:30.817 INFO: Combining 1 list datasets for head 'Default'
-2026-01-15 09:38:30.817 INFO: Head 'Default' training dataset size: 19
-2026-01-15 09:38:30.818 INFO: Computing average number of neighbors
-2026-01-15 09:38:31.201 INFO: Average number of neighbors: 5.333333333333333
-2026-01-15 09:38:31.201 INFO: During training the following quantities will be reported: dipoles, polarizabilities
-2026-01-15 09:38:31.201 INFO: ===========MODEL DETAILS===========
-2026-01-15 09:38:31.201 INFO: Building model
-2026-01-15 09:38:31.201 INFO: Message passing with 128 channels and max_L=2 (128x0e+128x1o+128x2e)
-2026-01-15 09:38:31.201 INFO: 2 layers, each with correlation order: 3 (body order: 4) and spherical harmonics up to: l=3
-2026-01-15 09:38:31.201 INFO: 8 radial and 5 basis functions
-2026-01-15 09:38:31.201 INFO: Radial cutoff: 3.5 A (total receptive field for each atom: 7.0 A)
-2026-01-15 09:38:31.201 INFO: Distance transform for radial basis functions: None
-2026-01-15 09:38:31.201 INFO: Hidden irreps: 128x0e+128x1o+128x2e
-You will calculate the polarizability and dipole.
-You will calculate the polarizability and dipole.
-2026-01-15 09:38:34.057 INFO: Total number of parameters: 1019200
-2026-01-15 09:38:34.057 INFO: 
-2026-01-15 09:38:34.057 INFO: ===========OPTIMIZER INFORMATION===========
-2026-01-15 09:38:34.058 INFO: Using ADAM as parameter optimizer
-2026-01-15 09:38:34.058 INFO: Batch size: 5
-2026-01-15 09:38:34.058 INFO: Number of gradient updates: 38
-2026-01-15 09:38:34.058 INFO: Learning rate: 0.01, weight decay: 5e-07
-2026-01-15 09:38:34.058 INFO: DipolePolarLoss(dipole_weight=1.000, polarizability_weight=1.000)
-2026-01-15 09:38:34.059 WARNING: Cannot find checkpoint with tag 'DielectricMACE_run-5' in '/tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar0'
-2026-01-15 09:38:34.059 INFO: Using gradient clipping with tolerance=10.000
-2026-01-15 09:38:34.059 INFO: 
-2026-01-15 09:38:34.059 INFO: ===========TRAINING===========
-2026-01-15 09:38:34.059 INFO: Started training, reporting errors on validation set
-2026-01-15 09:38:34.059 INFO: Loss metrics on validation set
-2026-01-15 09:38:34.244 INFO: Initial: head: Default, loss=0.1903, RMSE_MU_per_atom=76.08 me A, RMSE_polarizability_per_atom=429.56 me A^2 / V
-2026-01-15 09:38:35.172 INFO: Epoch 0: head: Default, loss=0.2130, RMSE_MU_per_atom=87.92 me A, RMSE_polarizability_per_atom=453.12 me A^2 / V
-2026-01-15 09:38:35.978 INFO: Epoch 2: head: Default, loss=0.2301, RMSE_MU_per_atom=123.07 me A, RMSE_polarizability_per_atom=463.68 me A^2 / V
-2026-01-15 09:38:36.714 INFO: Epoch 4: head: Default, loss=0.2481, RMSE_MU_per_atom=42.07 me A, RMSE_polarizability_per_atom=496.31 me A^2 / V
-2026-01-15 09:38:37.461 INFO: Epoch 6: head: Default, loss=0.3168, RMSE_MU_per_atom=152.32 me A, RMSE_polarizability_per_atom=541.86 me A^2 / V
-2026-01-15 09:38:38.215 INFO: Epoch 8: head: Default, loss=0.3227, RMSE_MU_per_atom=171.75 me A, RMSE_polarizability_per_atom=541.45 me A^2 / V
-2026-01-15 09:38:38.572 INFO: Training complete
-2026-01-15 09:38:38.572 INFO: 
-2026-01-15 09:38:38.572 INFO: ===========RESULTS===========
-2026-01-15 09:38:38.572 INFO: Loading checkpoint: /tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar0/DielectricMACE_run-5_epoch-0.pt
-2026-01-15 09:38:38.606 INFO: Loaded Stage one model from epoch 0 for evaluation
-2026-01-15 09:38:38.606 INFO: Saving model to /tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar0/DielectricMACE_run-5.model
-2026-01-15 09:38:38.944 INFO: Compiling model, saving metadata to /tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar0/DielectricMACE_compiled.model
-2026-01-15 09:38:39.894 INFO: Computing metrics for training, validation, and test sets
-2026-01-15 09:38:39.894 INFO: Skipping evaluation for heads: ['pt_head']
-2026-01-15 09:38:39.895 INFO: Evaluating train_Default ...
-2026-01-15 09:38:40.051 INFO: Evaluating valid_Default ...
-2026-01-15 09:38:40.091 INFO: Error-table on TRAIN and VALID:
-+---------------+-----------------------+--------------------+-----------------------------+
-|  config_type  | RMSE MU / me A / atom | relative MU RMSE % | RMSE ALPHA e A^2 / V / atom |
-+---------------+-----------------------+--------------------+-----------------------------+
-| train_Default |         284.05        |        98.2        |            375.00           |
-| valid_Default |         87.92         |        89.9        |            453.12           |
-+---------------+-----------------------+--------------------+-----------------------------+
-2026-01-15 09:38:40.137 INFO: Done
-Using head Default out of ['Default']
-No dtype selected, switching to float64 to match model dtype.
-Mus [array([0., 0., 0.]), array([0., 0., 0.]), array([-0.01003683,  0.07920987, -0.05285109]), array([0.0837837 , 0.17283619, 0.03531497]), array([ 0.28194673,  0.28135309, -0.00599769]), array([ 0.04049187, -0.07868273, -0.07127807]), array([-0.01927376, -0.06026412, -0.03370705]), array([-0.08400456, -0.17907507, -0.08920032]), array([-0.11697829, -0.00564452, -0.02351107]), array([0.10335527, 0.12940181, 0.0570534 ]), array([-0.02920412,  0.04432303,  0.0566499 ]), array([-0.05960434,  0.09841411, -0.01532246]), array([-0.00575188,  0.10669392, -0.0272646 ]), array([ 0.15991328, -0.18755704, -0.09522078]), array([0.01966076, 0.06202947, 0.11444975]), array([-0.00158459,  0.16716305, -0.10064681]), array([-0.01400977, -0.105333  , -0.02634205]), array([-0.09883337, -0.37506466, -0.059491  ]), array([0.00547619, 0.1254327 , 0.01234873]), array([0.04758369, 0.12741344, 0.05723325]), array([-0.0591853 , -0.03520383,  0.10875182]), array([0.09024868, 0.74820363, 0.21495529])]
-alphas [array([[0., 0., 0.],
-       [0., 0., 0.],
-       [0., 0., 0.]]), array([[0., 0., 0.],
-       [0., 0., 0.],
-       [0., 0., 0.]]), array([[-0.02245392,  0.00153124,  0.01879668],
-       [ 0.00153124, -0.01137423, -0.01147284],
-       [ 0.01879668, -0.01147284, -0.01238664]]), array([[-0.11292425, -0.13285205, -0.05835286],
-       [-0.13285205,  0.00386039,  0.00067999],
-       [-0.05835286,  0.00067999,  0.07104102]]), array([[-0.0750868 ,  0.27880967, -0.05642594],
-       [ 0.27880967, -0.10212219,  0.05518507],
-       [-0.05642594,  0.05518507,  0.18623722]]), array([[-0.19503786, -0.0604014 ,  0.28198189],
-       [-0.0604014 ,  0.1517667 , -0.09852159],
-       [ 0.28198189, -0.09852159, -0.10085027]]), array([[-0.01036531,  0.01057722,  0.02038698],
-       [ 0.01057722, -0.02242929,  0.01678311],
-       [ 0.02038698,  0.01678311, -0.03751157]]), array([[ 0.12553595, -0.01431342,  0.02707943],
-       [-0.01431342, -0.14096062, -0.17864685],
-       [ 0.02707943, -0.17864685, -0.02502059]]), array([[-0.16016952, -0.02654469, -0.04520082],
-       [-0.02654469,  0.09901131, -0.00872241],
-       [-0.04520082, -0.00872241,  0.04063899]]), array([[-0.00397853,  0.00279013, -0.00820968],
-       [ 0.00279013, -0.01186832,  0.03051712],
-       [-0.00820968,  0.03051712, -0.02406792]]), array([[ 0.22407651, -0.05400181, -0.14464292],
-       [-0.05400181,  0.19681376, -0.19325795],
-       [-0.14464292, -0.19325795, -0.20916342]]), array([[-0.04198071,  0.00650174,  0.00947763],
-       [ 0.00650174, -0.04123876,  0.00783461],
-       [ 0.00947763,  0.00783461, -0.00874146]]), array([[-0.01526204, -0.00470994,  0.00069972],
-       [-0.00470994,  0.00125824, -0.00954488],
-       [ 0.00069972, -0.00954488,  0.01915638]]), array([[ 0.10761727,  0.19946294,  0.14012192],
-       [ 0.19946294, -0.03465495, -0.17459365],
-       [ 0.14012192, -0.17459365,  0.14786939]]), array([[ 0.00752754, -0.01358275,  0.02255752],
-       [-0.01358275, -0.03143609, -0.00619038],
-       [ 0.02255752, -0.00619038, -0.01118884]]), array([[-2.16480349e-02,  6.16254822e-05, -1.01155760e-02],
-       [ 6.16254822e-05, -1.06360309e-02, -6.20510505e-03],
-       [-1.01155760e-02, -6.20510505e-03, -3.05088420e-02]]), array([[ 0.00168866, -0.03881172,  0.00753974],
-       [-0.03881172, -0.06351265, -0.011695  ],
-       [ 0.00753974, -0.011695  ,  0.00206112]]), array([[ 0.1321759 ,  0.10772793,  0.00854354],
-       [ 0.10772793, -0.12914251,  0.0673724 ],
-       [ 0.00854354,  0.0673724 , -0.02754687]]), array([[-0.01825764,  0.00589883, -0.00266034],
-       [ 0.00589883, -0.00156939,  0.00220375],
-       [-0.00266034,  0.00220375, -0.04416234]]), array([[ 8.23547586e-03,  3.03045452e-02,  6.56061498e-05],
-       [ 3.03045452e-02, -1.19830639e-02,  2.37769536e-02],
-       [ 6.56061498e-05,  2.37769536e-02,  2.37219634e-03]]), array([[-0.0435125 , -0.01109231,  0.00993496],
-       [-0.01109231, -0.03581126,  0.01323614],
-       [ 0.00993496,  0.01323614, -0.0478329 ]]), array([[-0.13572366,  0.00817794, -0.00051133],
-       [ 0.00817794, -0.23230407,  0.02327676],
-       [-0.00051133,  0.02327676, -0.1742253 ]])]
------------------------------ Captured stderr call -----------------------------
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/e3nn/o3/_wigner.py:10: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
-  _Jd, _W3j_flat, _W3j_indices = torch.load(os.path.join(os.path.dirname(__file__), 'constants.pt'))
-Error while loading libcue_ops.so: /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/cuequivariance_ops/lib/libcue_ops.so: undefined symbol: cublasGemmGroupedBatchedEx, version libcublas.so.12
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
-  warnings.warn(
-/raven/ptmp/ngoen/mace_tensors_test/mace/tools/checkpoint.py:187: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
-  torch.load(f=checkpoint_info.path, map_location=device),
-_______________________ test_run_train_dipole_polar_cueq _______________________
-
-tmp_path = PosixPath('/tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar_cu0')
-fitting_configs = [Atoms(symbols='O', pbc=False, cell=[6.0, 6.0, 6.0], calculator=MACECalculator(...)), Atoms(symbols='H', pbc=False, ce...lator(...)), Atoms(symbols='OH2', pbc=True, cell=[4.0, 4.0, 4.0], REF_forces=..., calculator=MACECalculator(...)), ...]
+tmp_path = PosixPath('/tmp/pytest-of-ngoen/pytest-14/test_run_train_dipole_polar_cu0')
+fitting_configs = [Atoms(symbols='O', pbc=True, cell=[6.0, 6.0, 6.0], calculator=MACECalculator(...)), Atoms(symbols='H', pbc=True, cell...lator(...)), Atoms(symbols='OH2', pbc=True, cell=[4.0, 4.0, 4.0], REF_forces=..., calculator=MACECalculator(...)), ...]
 
     @pytest.mark.skipif(not CUET_AVAILABLE, reason="cuequivariance not installed")
-    def test_run_train_dipole_polar_cueq(tmp_path, fitting_configs):
+    def test_run_train_dipole_polar_cueq_with_rotation(tmp_path, fitting_configs):
+        # ---------- write training data ----------
         ase.io.write(tmp_path / "fit.xyz", fitting_configs)
     
         mace_params = _mace_params_dipole_polar_cueq.copy()
@@ -383,11 +22,10 @@ fitting_configs = [Atoms(symbols='O', pbc=False, cell=[6.0, 6.0, 6.0], calculato
         mace_params["model_dir"] = str(tmp_path)
         mace_params["train_file"] = tmp_path / "fit.xyz"
     
-        # make sure run_train.py is using the mace that is currently being tested
+        # ensure run_train.py uses the repo under test
         run_env = os.environ.copy()
         sys.path.insert(0, str(Path(__file__).parent.parent))
         run_env["PYTHONPATH"] = ":".join(sys.path)
-        print("DEBUG subprocess PYTHONPATH", run_env["PYTHONPATH"])
     
         cmd = (
             sys.executable
@@ -405,222 +43,142 @@ fitting_configs = [Atoms(symbols='O', pbc=False, cell=[6.0, 6.0, 6.0], calculato
         p = subprocess.run(cmd.split(), env=run_env, check=True)
         assert p.returncode == 0
     
-        calc = MACECalculator(model_paths=tmp_path / "DielectricMACE.model",model_type="DipolePolarizabilityMACE", device="cpu")
+        model_path = tmp_path / "DielectricMACE.model"
     
-        Mus = []
-        alphas = []
-        for at in fitting_configs:
-            at.calc = calc
-            Mus.append(at.get_dipole_moment())
-            alphas.append(calc.get_property("polarizability", at))
+        # ---------- calculators ----------
+        calc = MACECalculator(
+            model_paths=model_path,
+            model_type="DipolePolarizabilityMACE",
+            device="cpu",
+        )
+        calc_cueq = MACECalculator(
+            model_paths=model_path,
+            model_type="DipolePolarizabilityMACE",
+            device="cpu",
+            enable_cueq=True,
+        )
     
+        # ---------- build rotated configs ----------
+        rot_mat = Rscipy.from_euler("z", 60, degrees=True).as_matrix()
+        fitting_configs_rot = [rotate_atoms(at, rot_mat) for at in fitting_configs]
     
-        calc_cueq = MACECalculator(model_paths=tmp_path / "DielectricMACE.model",model_type="DipolePolarizabilityMACE", device="cpu",enable_cueq=True)
+        # ---------- (optional) existing regression arrays ----------
+        # If you still want the old "exact value" regression checks, keep your
+        # ref_Mus/ref_alphas and do those asserts here, unchanged.
+        #
+        # Mus = []
+        # alphas = []
+        # for at in fitting_configs:
+        #     at.calc = calc
+        #     Mus.append(at.get_dipole_moment())
+        #     alphas.append(calc.get_property("polarizability", at))
+        #
+        # Mus_cueq = []
+        # alphas_cueq = []
+        # for at in fitting_configs:
+        #     at.calc = calc_cueq
+        #     Mus_cueq.append(at.get_dipole_moment())
+        #     alphas_cueq.append(calc_cueq.get_property("polarizability", at))
+        #
+        # assert np.allclose(Mus, ref_Mus)
+        # assert np.allclose(alphas, ref_alphas)
+        # assert np.allclose(Mus_cueq, ref_Mus)
+        # assert np.allclose(alphas_cueq, ref_alphas)
     
-        Mus_cueq = []
-        alphas_cueq = []
-        for at in fitting_configs:
-            at.calc = calc_cueq
-            Mus_cueq.append(at.get_dipole_moment())
-            alphas_cueq.append(calc_cueq.get_property("polarizability", at))
-    
-        print("Mus", Mus)
-        print("alphas", alphas)
-    
-        print("Mus with CuEq", Mus_cueq)
-        print("alphas with CuEq", alphas_cueq)
-        # Obtained for MACE from the 08/08/2025
-        ref_Mus = [
-            np.array([0., 0., 0.]),
-            np.array([0., 0., 0.]),
-            np.array([-0.00405055,  0.04989444, -0.03235187]),
-            np.array([0.07428956, 0.17534762, 0.0344151 ]),
-            np.array([0.22928963, 0.22789771, 0.01154527]),
-            np.array([ 0.03826594, -0.07032791, -0.04752111]),
-            np.array([-0.01850784, -0.0397861 , -0.02993542]),
-            np.array([-0.08677283, -0.16031447, -0.07839491]),
-            np.array([-0.10964872, -0.016287  , -0.02204037]),
-            np.array([0.07918389, 0.08737918, 0.04145608]),
-            np.array([-0.02907002,  0.01990042, -0.025413  ]),
-            np.array([-0.04857212,  0.07961402, -0.01174765]),
-            np.array([-0.00435445,  0.06191188, -0.01095293]),
-            np.array([ 0.12814346, -0.16236763, -0.08407766]),
-            np.array([0.01998741, 0.06349773, 0.10308535]),
-            np.array([-0.01837022,  0.14428979, -0.08086759]),
-            np.array([-0.01595687, -0.10272478, -0.0236392 ]),
-            np.array([-0.1400921 , -0.087709  , -0.05998242]),
-            np.array([-0.0009531 ,  0.11478384,  0.01394257]),
-            np.array([0.01886107, 0.06399308, 0.03219055]),
-            np.array([-0.0578738 , -0.01193058,  0.09853157]),
-            np.array([0.06845842, 0.55215253, 0.16271066])
-        ]
-    
-        ref_alphas = [
-            np.array([[0., 0., 0.],
-                    [0., 0., 0.],
-                    [0., 0., 0.]]),
-    
-            np.array([[0., 0., 0.],
-                    [0., 0., 0.],
-                    [0., 0., 0.]]),
-    
-            np.array([[-0.01774253,  0.00307792,  0.01980522],
-                    [ 0.00307792, -0.01334953, -0.01574966],
-                    [ 0.01980522, -0.01574966, -0.00921213]]),
-    
-            np.array([[-0.10119078, -0.13912649, -0.06179769],
-                    [-0.13912649,  0.01985949,  0.0011849 ],
-                    [-0.06179769,  0.0011849 ,  0.09128444]]),
-    
-            np.array([[-0.08015337,  0.28906984, -0.05851742],
-                    [ 0.28906984, -0.10814388,  0.05704551],
-                    [-0.05851742,  0.05704551,  0.19103685]]),
-    
-            np.array([[-0.10977471, -0.04570234,  0.28398318],
-                    [-0.04570234,  0.23783969, -0.08478971],
-                    [ 0.28398318, -0.08478971, -0.01218864]]),
-    
-            np.array([[-0.00033354,  0.00791392,  0.01818803],
-                    [ 0.00791392, -0.01052066,  0.01542726],
-                    [ 0.01818803,  0.01542726, -0.02606526]]),
-    
-            np.array([[ 0.1590121 , -0.0117003 ,  0.02571063],
-                    [-0.0117003 , -0.11642923, -0.18587264],
-                    [ 0.02571063, -0.18587264,  0.00499395]]),
-    
-            np.array([[-0.14361682, -0.02639792, -0.04795591],
-                    [-0.02639792,  0.12444872, -0.00903552],
-                    [-0.04795591, -0.00903552,  0.07012009]]),
-    
-            np.array([[-0.02385325,  0.00278218, -0.00900929],
-                    [ 0.00278218, -0.02249226,  0.03559279],
-                    [-0.00900929,  0.03559279, -0.03665955]]),
-    
-            np.array([[ 0.19766853, -0.05722875, -0.15204635],
-                    [-0.05722875,  0.16751105, -0.20498558],
-                    [-0.15204635, -0.20498558, -0.25885304]]),
-    
-            np.array([[-3.33497839e-02,  5.84507102e-03,  1.03779892e-02],
-                    [ 5.84507102e-03, -3.23186866e-02,  8.11547509e-03],
-                    [ 1.03779892e-02,  8.11547509e-03,  5.04013953e-05]]),
-    
-            np.array([[-0.03121629, -0.00526901,  0.00280257],
-                    [-0.00526901, -0.01555394, -0.00570221],
-                    [ 0.00280257, -0.00570221, -0.00175081]]),
-    
-            np.array([[ 0.08495039,  0.20898154,  0.15077567],
-                    [ 0.20898154, -0.06027019, -0.18349961],
-                    [ 0.15077567, -0.18349961,  0.13150356]]),
-    
-            np.array([[ 0.02664201, -0.01412724,  0.01773262],
-                    [-0.01412724, -0.01550847, -0.00363691],
-                    [ 0.01773262, -0.00363691, -0.00834004]]),
-    
-            np.array([[-0.02283877, -0.00013611, -0.01089784],
-                    [-0.00013611, -0.01043637, -0.00651823],
-                    [-0.01089784, -0.00651823, -0.03756097]]),
-    
-            np.array([[ 0.02721329, -0.0434384 ,  0.00925382],
-                    [-0.0434384 , -0.04067187, -0.01123916],
-                    [ 0.00925382, -0.01123916,  0.03137444]]),
-    
-            np.array([[ 0.13941369,  0.1125973 ,  0.0079224 ],
-                    [ 0.1125973 , -0.13189636,  0.07080912],
-                    [ 0.0079224 ,  0.07080912, -0.02471156]]),
-    
-            np.array([[-0.00891008,  0.00219625, -0.00342596],
-                    [ 0.00219625,  0.00338428,  0.00039052],
-                    [-0.00342596,  0.00039052, -0.03264827]]),
-    
-            np.array([[-0.00305826,  0.03268619, -0.00097526],
-                    [ 0.03268619, -0.02749376,  0.02723039],
-                    [-0.00097526,  0.02723039, -0.01024948]]),
-    
-            np.array([[-0.0152999 , -0.01413736,  0.01099587],
-                    [-0.01413736, -0.01621853,  0.01282218],
-                    [ 0.01099587,  0.01282218, -0.02029655]]),
-    
-            np.array([[-0.11326049,  0.00939965, -0.00715356],
-                    [ 0.00939965, -0.2316651 ,  0.03025837],
-                    [-0.00715356,  0.03025837, -0.10757094]])
-    ]
-    
-    
->       assert np.allclose(Mus, ref_Mus)
-E       assert False
-E        +  where False = <function allclose at 0x150280517270>([array([0., 0., 0.]), array([0., 0., 0.]), array([-0.01015325,  0.07975352, -0.0528359 ]), array([0.08360595, 0.17204371, 0.03546132]), array([ 0.28216674,  0.28147777, -0.00588804]), array([ 0.03838414, -0.07880182, -0.07061784]), ...], [array([0., 0., 0.]), array([0., 0., 0.]), array([-0.00405055,  0.04989444, -0.03235187]), array([0.07428956, 0.17534762, 0.0344151 ]), array([0.22928963, 0.22789771, 0.01154527]), array([ 0.03826594, -0.07032791, -0.04752111]), ...])
-E        +    where <function allclose at 0x150280517270> = np.allclose
+        # ---------- new: equivariance checks (original vs rotated) ----------
+        print("Checking cueq=False!")
+        assert_equivariance_for_calculator(calc, fitting_configs, fitting_configs_rot, rot_mat)
+        print("\nChecking cueq=True!\n")
+>       assert_equivariance_for_calculator(calc_cueq, fitting_configs, fitting_configs_rot, rot_mat)
 
-tests/test_run_train_dipole_polar.py:690: AssertionError
----------------------------- Captured stdout setup -----------------------------
--0.22986995777935923
-1.2393429788252843
-0.8769075911230111
-1.5507335435185754
-0.0652978987693415
--0.8955962989131678
--0.8309004805268301
-0.02993297494733048
-1.110908739659707
-0.37736011743265163
--0.9075475280783049
-1.5448594976242958
--0.1862162334955482
-0.21099181169546216
-0.0163983811679152
-0.73006680071724
-0.0020995251183656
-0.6893588524733384
-0.005454790544950142
-0.18529790425534265
+tests/test_run_train_dipole_polar_eq.py:238: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+calc_obj = <mace.calculators.mace.MACECalculator object at 0x14fbe8a52930>
+configs = [Atoms(symbols='O', pbc=True, cell=[6.0, 6.0, 6.0], calculator=MACECalculator(...)), Atoms(symbols='H', pbc=True, cell...lator(...)), Atoms(symbols='OH2', pbc=True, cell=[4.0, 4.0, 4.0], REF_forces=..., calculator=MACECalculator(...)), ...]
+configs_rot = [Atoms(symbols='O', pbc=True, cell=[[3.0000000000000013, 5.196152422706632, 0.0], [-5.196152422706632, 3.0000000000000... [-3.4641016151377544, 2.000000000000001, 0.0], [0.0, 0.0, 4.0]], REF_forces=..., calculator=MACECalculator(...)), ...]
+Rmat = array([[ 0.5      , -0.8660254,  0.       ],
+       [ 0.8660254,  0.5      ,  0.       ],
+       [ 0.       ,  0.       ,  1.       ]])
+atol = 1e-08, rtol = 1e-08
+
+    def assert_equivariance_for_calculator(
+        calc_obj,
+        configs,
+        configs_rot,
+        Rmat,
+        atol=1e-8,
+        rtol=1e-8,
+    ):
+        """Check mu(rot(x)) ≈ R mu(x) and alpha(rot(x)) ≈ R alpha(x) R^T."""
+        for at, at_r in zip(configs, configs_rot):
+            # original
+            at.calc = calc_obj
+            mu = np.asarray(at.get_dipole_moment())
+            alpha = np.asarray(calc_obj.get_property("polarizability", at))
+    
+            # rotated
+            at_r.calc = calc_obj
+            mu_r = np.asarray(at_r.get_dipole_moment())
+            alpha_r = np.asarray(calc_obj.get_property("polarizability", at_r))
+            print("Mus R:",mu_r, Rmat @ mu)
+            print("Alphas R:",alpha_r, Rmat @ alpha @ Rmat.T)
+>           assert np.allclose(Rmat @ mu, mu_r, atol=atol, rtol=rtol)
+E           assert False
+E            +  where False = <function allclose at 0x14fcfe102170>((array([[ 0.5      , -0.8660254,  0.       ],\n       [ 0.8660254,  0.5      ,  0.       ],\n       [ 0.       ,  0.       ,  1.       ]]) @ array([-0.01018337,  0.07967636, -0.05284215])), array([-0.07411352,  0.03105417, -0.05284215]), atol=1e-08, rtol=1e-08)
+E            +    where <function allclose at 0x14fcfe102170> = np.allclose
+
+tests/test_run_train_dipole_polar_eq.py:157: AssertionError
 ----------------------------- Captured stdout call -----------------------------
-DEBUG subprocess PYTHONPATH /raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_tensors_test:/raven/ptmp/ngoen/mace_alpha_testing/bin:/u/ngoen/Documents/biASE:/u/ngoen/Documents/master_pf:/raven/ptmp/ngoen/mace_tensors_test:/mpcdf/soft/SLE_15/packages/x86_64/python-waterboa/2024.06/lib/python312.zip:/mpcdf/soft/SLE_15/packages/x86_64/python-waterboa/2024.06/lib/python3.12:/mpcdf/soft/SLE_15/packages/x86_64/python-waterboa/2024.06/lib/python3.12/lib-dynload:/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages:/raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/setuptools/_vendor:/tmp/tmpkdyj3qbk
-2026-01-15 09:38:46.732 INFO: ===========VERIFYING SETTINGS===========
-2026-01-15 09:38:46.732 INFO: MACE version: 0.3.14
-2026-01-15 09:38:46.732 INFO: Using CPU
-2026-01-15 09:38:46.777 INFO: ===========LOADING INPUT DATA===========
-2026-01-15 09:38:46.777 INFO: Using heads: ['Default']
-2026-01-15 09:38:46.777 INFO: Using the key specifications to parse data:
-2026-01-15 09:38:46.777 INFO: Default: KeySpecification(info_keys={'energy': 'REF_energy', 'stress': 'REF_stress', 'virials': 'REF_virials', 'dipole': 'REF_dipoles', 'head': 'head', 'elec_temp': 'elec_temp', 'total_charge': 'total_charge', 'polarizability': 'REF_polarizability', 'total_spin': 'total_spin'}, arrays_keys={'forces': 'REF_forces', 'charges': 'REF_charges'})
-2026-01-15 09:38:46.777 INFO: =============    Processing head Default     ===========
-2026-01-15 09:38:46.795 INFO: Using isolated atom energies from training file
-2026-01-15 09:38:46.795 INFO: Training set 1/1 [energy: 20, stress: 20, virials: 0, dipole components: 20, head: 20, elec_temp: 0, total_charge: 0, polarizability: 20, total_spin: 0, forces: 20, charges: 0]
-2026-01-15 09:38:46.796 INFO: Total Training set [energy: 20, stress: 20, virials: 0, dipole components: 20, head: 20, elec_temp: 0, total_charge: 0, polarizability: 20, total_spin: 0, forces: 20, charges: 0]
-2026-01-15 09:38:46.796 INFO: No validation set provided, splitting training data instead.
-2026-01-15 09:38:46.796 INFO: Using random 5% of training set for validation with following indices: [8]
-2026-01-15 09:38:46.796 INFO: Random Split Training set [energy: 19, stress: 19, virials: 0, dipole components: 19, head: 19, elec_temp: 0, total_charge: 0, polarizability: 19, total_spin: 0, forces: 19, charges: 0]
-2026-01-15 09:38:46.796 INFO: Random Split Validation set [energy: 1, stress: 1, virials: 0, dipole components: 1, head: 1, elec_temp: 0, total_charge: 0, polarizability: 1, total_spin: 0, forces: 1, charges: 0]
-2026-01-15 09:38:46.796 INFO: Total number of configurations: train=19, valid=1, tests=[],
-2026-01-15 09:38:46.796 WARNING: Validation batch size (10) is larger than the number of validation data (1)
-2026-01-15 09:38:46.797 INFO: Atomic Numbers used: [np.int64(1), np.int64(8)]
-2026-01-15 09:38:46.797 INFO: Processing datasets for head 'Default'
-2026-01-15 09:38:46.807 INFO: Combining 1 list datasets for head 'Default'
-2026-01-15 09:38:46.808 INFO: Head 'Default' training dataset size: 19
-2026-01-15 09:38:46.809 INFO: Computing average number of neighbors
-2026-01-15 09:38:47.188 INFO: Average number of neighbors: 5.333333333333333
-2026-01-15 09:38:47.188 INFO: During training the following quantities will be reported: dipoles, polarizabilities
-2026-01-15 09:38:47.188 INFO: ===========MODEL DETAILS===========
-2026-01-15 09:38:47.188 INFO: Building model
-2026-01-15 09:38:47.188 INFO: Message passing with 128 channels and max_L=2 (128x0e+128x1o+128x2e)
-2026-01-15 09:38:47.188 INFO: 2 layers, each with correlation order: 3 (body order: 4) and spherical harmonics up to: l=3
-2026-01-15 09:38:47.188 INFO: 8 radial and 5 basis functions
-2026-01-15 09:38:47.188 INFO: Radial cutoff: 3.5 A (total receptive field for each atom: 7.0 A)
-2026-01-15 09:38:47.188 INFO: Distance transform for radial basis functions: None
-2026-01-15 09:38:47.189 INFO: Hidden irreps: 128x0e+128x1o+128x2e
+2026-01-16 15:10:17.002 INFO: ===========VERIFYING SETTINGS===========
+2026-01-16 15:10:17.002 INFO: MACE version: 0.3.14
+2026-01-16 15:10:17.002 INFO: Using CPU
+2026-01-16 15:10:17.085 INFO: ===========LOADING INPUT DATA===========
+2026-01-16 15:10:17.085 INFO: Using heads: ['Default']
+2026-01-16 15:10:17.085 INFO: Using the key specifications to parse data:
+2026-01-16 15:10:17.085 INFO: Default: KeySpecification(info_keys={'energy': 'REF_energy', 'stress': 'REF_stress', 'virials': 'REF_virials', 'dipole': 'REF_dipoles', 'head': 'head', 'elec_temp': 'elec_temp', 'total_charge': 'total_charge', 'polarizability': 'REF_polarizability', 'total_spin': 'total_spin'}, arrays_keys={'forces': 'REF_forces', 'charges': 'REF_charges'})
+2026-01-16 15:10:17.085 INFO: =============    Processing head Default     ===========
+2026-01-16 15:10:17.104 INFO: Using isolated atom energies from training file
+2026-01-16 15:10:17.105 INFO: Training set 1/1 [energy: 20, stress: 20, virials: 0, dipole components: 20, head: 20, elec_temp: 0, total_charge: 0, polarizability: 20, total_spin: 0, forces: 20, charges: 0]
+2026-01-16 15:10:17.105 INFO: Total Training set [energy: 20, stress: 20, virials: 0, dipole components: 20, head: 20, elec_temp: 0, total_charge: 0, polarizability: 20, total_spin: 0, forces: 20, charges: 0]
+2026-01-16 15:10:17.105 INFO: No validation set provided, splitting training data instead.
+2026-01-16 15:10:17.106 INFO: Using random 5% of training set for validation with following indices: [8]
+2026-01-16 15:10:17.106 INFO: Random Split Training set [energy: 19, stress: 19, virials: 0, dipole components: 19, head: 19, elec_temp: 0, total_charge: 0, polarizability: 19, total_spin: 0, forces: 19, charges: 0]
+2026-01-16 15:10:17.106 INFO: Random Split Validation set [energy: 1, stress: 1, virials: 0, dipole components: 1, head: 1, elec_temp: 0, total_charge: 0, polarizability: 1, total_spin: 0, forces: 1, charges: 0]
+2026-01-16 15:10:17.106 INFO: Total number of configurations: train=19, valid=1, tests=[],
+2026-01-16 15:10:17.106 WARNING: Validation batch size (10) is larger than the number of validation data (1)
+2026-01-16 15:10:17.106 INFO: Atomic Numbers used: [np.int64(1), np.int64(8)]
+2026-01-16 15:10:17.106 INFO: Processing datasets for head 'Default'
+2026-01-16 15:10:17.117 INFO: Combining 1 list datasets for head 'Default'
+2026-01-16 15:10:17.118 INFO: Head 'Default' training dataset size: 19
+2026-01-16 15:10:17.118 INFO: Computing average number of neighbors
+2026-01-16 15:10:17.537 INFO: Average number of neighbors: 5.333333333333333
+2026-01-16 15:10:17.537 INFO: During training the following quantities will be reported: dipoles, polarizabilities
+2026-01-16 15:10:17.537 INFO: ===========MODEL DETAILS===========
+2026-01-16 15:10:17.537 INFO: Building model
+2026-01-16 15:10:17.537 INFO: Message passing with 128 channels and max_L=2 (128x0e+128x1o+128x2e)
+2026-01-16 15:10:17.537 INFO: 2 layers, each with correlation order: 3 (body order: 4) and spherical harmonics up to: l=3
+2026-01-16 15:10:17.537 INFO: 8 radial and 5 basis functions
+2026-01-16 15:10:17.537 INFO: Radial cutoff: 3.5 A (total receptive field for each atom: 7.0 A)
+2026-01-16 15:10:17.537 INFO: Distance transform for radial basis functions: None
+2026-01-16 15:10:17.537 INFO: Hidden irreps: 128x0e+128x1o+128x2e
 You will calculate the polarizability and dipole.
 You will calculate the polarizability and dipole.
-2026-01-15 09:38:50.036 INFO: Total number of parameters: 1019200
-2026-01-15 09:38:50.036 INFO: 
-2026-01-15 09:38:50.036 INFO: ===========OPTIMIZER INFORMATION===========
-2026-01-15 09:38:50.036 INFO: Using ADAM as parameter optimizer
-2026-01-15 09:38:50.036 INFO: Batch size: 5
-2026-01-15 09:38:50.036 INFO: Number of gradient updates: 38
-2026-01-15 09:38:50.036 INFO: Learning rate: 0.01, weight decay: 5e-07
-2026-01-15 09:38:50.036 INFO: DipolePolarLoss(dipole_weight=1.000, polarizability_weight=1.000)
-2026-01-15 09:38:50.036 INFO: Converting model to CUEQ for accelerated training
-2026-01-15 09:38:50.184 INFO: Creating new model with cuequivariance settings
+GGGGGGGGGG <function silu at 0x154e865cd440>
+2026-01-16 15:10:20.366 INFO: Total number of parameters: 1019200
+2026-01-16 15:10:20.366 INFO: 
+2026-01-16 15:10:20.367 INFO: ===========OPTIMIZER INFORMATION===========
+2026-01-16 15:10:20.367 INFO: Using ADAM as parameter optimizer
+2026-01-16 15:10:20.367 INFO: Batch size: 5
+2026-01-16 15:10:20.367 INFO: Number of gradient updates: 38
+2026-01-16 15:10:20.367 INFO: Learning rate: 0.01, weight decay: 5e-07
+2026-01-16 15:10:20.367 INFO: DipolePolarLoss(dipole_weight=1.000, polarizability_weight=1.000)
+2026-01-16 15:10:20.367 INFO: Converting model to CUEQ for accelerated training
+Gate <function silu at 0x154e865cd440>
+2026-01-16 15:10:20.512 INFO: Creating new model with cuequivariance settings
 You will calculate the polarizability and dipole.
 You will calculate the polarizability and dipole.
+GGGGGGGGGG <function silu at 0x154e865cd440>
 RRRR 2 16x0e+16x1o+16x2e
 Source AtomicDielectricMACE(
   (node_embedding): LinearNodeEmbeddingBlock(
@@ -1014,49 +572,69 @@ target AtomicDielectricMACE(
     )
   )
 )
-2026-01-15 09:41:59.555 WARNING: Cannot find checkpoint with tag 'DielectricMACE_run-5' in '/tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar_cu0'
-2026-01-15 09:41:59.555 INFO: Using gradient clipping with tolerance=10.000
-2026-01-15 09:41:59.555 INFO: 
-2026-01-15 09:41:59.556 INFO: ===========TRAINING===========
-2026-01-15 09:41:59.557 INFO: Started training, reporting errors on validation set
-2026-01-15 09:41:59.557 INFO: Loss metrics on validation set
-2026-01-15 09:42:01.169 INFO: Initial: head: Default, loss=0.1902, RMSE_MU_per_atom=76.34 me A, RMSE_polarizability_per_atom=429.42 me A^2 / V
-2026-01-15 09:42:18.435 INFO: Epoch 0: head: Default, loss=0.2132, RMSE_MU_per_atom=87.81 me A, RMSE_polarizability_per_atom=453.29 me A^2 / V
-2026-01-15 09:42:54.590 INFO: Epoch 2: head: Default, loss=0.2303, RMSE_MU_per_atom=122.31 me A, RMSE_polarizability_per_atom=464.10 me A^2 / V
-2026-01-15 09:43:26.835 INFO: Epoch 4: head: Default, loss=0.2489, RMSE_MU_per_atom=43.04 me A, RMSE_polarizability_per_atom=497.02 me A^2 / V
-2026-01-15 09:44:00.326 INFO: Epoch 6: head: Default, loss=0.3166, RMSE_MU_per_atom=149.17 me A, RMSE_polarizability_per_atom=542.59 me A^2 / V
-2026-01-15 09:44:32.665 INFO: Epoch 8: head: Default, loss=0.3202, RMSE_MU_per_atom=170.89 me A, RMSE_polarizability_per_atom=539.48 me A^2 / V
-2026-01-15 09:44:48.042 INFO: Training complete
-2026-01-15 09:44:48.043 INFO: 
-2026-01-15 09:44:48.043 INFO: ===========RESULTS===========
-2026-01-15 09:44:48.047 INFO: Loading checkpoint: /tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar_cu0/DielectricMACE_run-5_epoch-0.pt
-2026-01-15 09:44:48.870 INFO: Loaded Stage one model from epoch 0 for evaluation
-2026-01-15 09:44:48.872 INFO: Saving model to /tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar_cu0/DielectricMACE_run-5.model
-2026-01-15 09:45:22.088 INFO: RUNING CUEQ TO E3NN
-2026-01-15 09:45:56.070 INFO: Creating new model without CuEq settings
+
+ #################################################### 
+
+SOURCE equi_nonlin_weight:
+Gate (48x0e+16x1o+16x2e -> 16x0e+16x1o+16x2e)
+Activation [x] (16x0e -> 16x0e)
+Activation [xx] (16x0e+16x0e -> 16x0e+16x0e)
+TARGET equi_nonlin_weight:
+Gate (48x0e+16x1o+16x2e -> 16x0e+16x1o+16x2e)
+Activation [x] (16x0e -> 16x0e)
+Activation [xx] (16x0e+16x0e -> 16x0e+16x0e)
+linear_1 max |Δ|: 3.827398659509932
+Gate max |Δ|: 5.340851311633165
+Full readout max |Δ|: 2.523334616696201
+Gate-only max |Δ|: 0.0
+2026-01-16 15:13:30.891 WARNING: Cannot find checkpoint with tag 'DielectricMACE_run-5' in '/tmp/pytest-of-ngoen/pytest-14/test_run_train_dipole_polar_cu0'
+2026-01-16 15:13:30.891 INFO: Using gradient clipping with tolerance=10.000
+2026-01-16 15:13:30.891 INFO: 
+2026-01-16 15:13:30.892 INFO: ===========TRAINING===========
+2026-01-16 15:13:30.892 INFO: Started training, reporting errors on validation set
+2026-01-16 15:13:30.892 INFO: Loss metrics on validation set
+2026-01-16 15:13:32.489 INFO: Initial: head: Default, loss=0.1902, RMSE_MU_per_atom=76.34 me A, RMSE_polarizability_per_atom=429.42 me A^2 / V
+2026-01-16 15:13:49.470 INFO: Epoch 0: head: Default, loss=0.2132, RMSE_MU_per_atom=87.81 me A, RMSE_polarizability_per_atom=453.29 me A^2 / V
+2026-01-16 15:14:25.290 INFO: Epoch 2: head: Default, loss=0.2303, RMSE_MU_per_atom=122.31 me A, RMSE_polarizability_per_atom=464.10 me A^2 / V
+2026-01-16 15:14:57.842 INFO: Epoch 4: head: Default, loss=0.2489, RMSE_MU_per_atom=43.04 me A, RMSE_polarizability_per_atom=497.02 me A^2 / V
+2026-01-16 15:15:30.391 INFO: Epoch 6: head: Default, loss=0.3166, RMSE_MU_per_atom=149.17 me A, RMSE_polarizability_per_atom=542.59 me A^2 / V
+2026-01-16 15:16:04.011 INFO: Epoch 8: head: Default, loss=0.3202, RMSE_MU_per_atom=170.89 me A, RMSE_polarizability_per_atom=539.48 me A^2 / V
+2026-01-16 15:16:19.336 INFO: Training complete
+2026-01-16 15:16:19.339 INFO: 
+2026-01-16 15:16:19.345 INFO: ===========RESULTS===========
+2026-01-16 15:16:19.371 INFO: Loading checkpoint: /tmp/pytest-of-ngoen/pytest-14/test_run_train_dipole_polar_cu0/DielectricMACE_run-5_epoch-0.pt
+2026-01-16 15:16:20.215 INFO: Loaded Stage one model from epoch 0 for evaluation
+2026-01-16 15:16:20.219 INFO: Saving model to /tmp/pytest-of-ngoen/pytest-14/test_run_train_dipole_polar_cu0/DielectricMACE_run-5.model
+2026-01-16 15:16:53.944 INFO: RUNING CUEQ TO E3NN
+Gate <function silu at 0x154e865cd440>
+2026-01-16 15:17:28.552 INFO: Creating new model without CuEq settings
 You will calculate the polarizability and dipole.
 You will calculate the polarizability and dipole.
+GGGGGGGGGG <function silu at 0x154e865cd440>
 FFFFFF 16x0e+16x1o+16x2e 2
-2026-01-15 09:45:59.171 INFO: Compiling model, saving metadata to /tmp/pytest-of-ngoen/pytest-2/test_run_train_dipole_polar_cu0/DielectricMACE_compiled.model
-2026-01-15 09:46:00.164 INFO: Computing metrics for training, validation, and test sets
-2026-01-15 09:46:00.165 INFO: Skipping evaluation for heads: ['pt_head']
-2026-01-15 09:46:00.165 INFO: Evaluating train_Default ...
-2026-01-15 09:46:05.501 INFO: Evaluating valid_Default ...
-2026-01-15 09:46:07.085 INFO: Error-table on TRAIN and VALID:
+Gate <function silu at 0x154e865cd440>
+2026-01-16 15:17:31.779 INFO: Compiling model, saving metadata to /tmp/pytest-of-ngoen/pytest-14/test_run_train_dipole_polar_cu0/DielectricMACE_compiled.model
+2026-01-16 15:17:32.807 INFO: Computing metrics for training, validation, and test sets
+2026-01-16 15:17:32.808 INFO: Skipping evaluation for heads: ['pt_head']
+2026-01-16 15:17:32.808 INFO: Evaluating train_Default ...
+2026-01-16 15:17:38.217 INFO: Evaluating valid_Default ...
+2026-01-16 15:17:39.836 INFO: Error-table on TRAIN and VALID:
 +---------------+-----------------------+--------------------+-----------------------------+
 |  config_type  | RMSE MU / me A / atom | relative MU RMSE % | RMSE ALPHA e A^2 / V / atom |
 +---------------+-----------------------+--------------------+-----------------------------+
 | train_Default |         283.95        |        98.1        |            375.02           |
 | valid_Default |         87.81         |        89.8        |            453.29           |
 +---------------+-----------------------+--------------------+-----------------------------+
-2026-01-15 09:46:08.637 INFO: Done
+2026-01-16 15:17:41.398 INFO: Done
 Using head Default out of ['Default']
 No dtype selected, switching to float64 to match model dtype.
 Using head Default out of ['Default']
 No dtype selected, switching to float64 to match model dtype.
 Converting models to CuEq for acceleration
+Gate <function silu at 0x14fbf1375e40>
 You will calculate the polarizability and dipole.
 You will calculate the polarizability and dipole.
+GGGGGGGGGG <function silu at 0x14fbf1375e40>
 RRRR 2 16x0e+16x1o+16x2e
 Source AtomicDielectricMACE(
   (node_embedding): LinearNodeEmbeddingBlock(
@@ -1450,98 +1028,175 @@ target AtomicDielectricMACE(
     )
   )
 )
-Mus [array([0., 0., 0.]), array([0., 0., 0.]), array([-0.01015325,  0.07975352, -0.0528359 ]), array([0.08360595, 0.17204371, 0.03546132]), array([ 0.28216674,  0.28147777, -0.00588804]), array([ 0.03838414, -0.07880182, -0.07061784]), array([-0.01978392, -0.06069911, -0.03425306]), array([-0.08510742, -0.17840943, -0.08887766]), array([-0.11710349, -0.00584493, -0.02351123]), array([0.10352321, 0.12978042, 0.05714793]), array([-0.02847372,  0.04680662,  0.05943849]), array([-0.05954493,  0.0982624 , -0.01503451]), array([-0.00591105,  0.10732846, -0.02697527]), array([ 0.15829775, -0.18343261, -0.09384094]), array([0.01960939, 0.06173187, 0.11450695]), array([-0.00142847,  0.16734489, -0.10077541]), array([-0.01397064, -0.10591182, -0.02648474]), array([-0.09614148, -0.3764928 , -0.05864841]), array([0.00554653, 0.1264025 , 0.01260538]), array([0.04768462, 0.1277816 , 0.05753938]), array([-0.05951234, -0.03492427,  0.10970058]), array([0.09046519, 0.74819165, 0.21533117])]
-alphas [array([[0., 0., 0.],
-       [0., 0., 0.],
-       [0., 0., 0.]]), array([[0., 0., 0.],
-       [0., 0., 0.],
-       [0., 0., 0.]]), array([[-0.02235653,  0.00152279,  0.01887257],
-       [ 0.00152279, -0.01123664, -0.0114608 ],
-       [ 0.01887257, -0.0114608 , -0.01224474]]), array([[-0.1127048 , -0.13337445, -0.05860672],
-       [-0.13337445,  0.00434926,  0.00079711],
-       [-0.05860672,  0.00079711,  0.07192177]]), array([[-0.07484338,  0.27904915, -0.05653721],
-       [ 0.27904915, -0.10200166,  0.05519815],
-       [-0.05653721,  0.05519815,  0.18678978]]), array([[-0.19457126, -0.06100094,  0.28286911],
-       [-0.06100094,  0.15297283, -0.09880755],
-       [ 0.28286911, -0.09880755, -0.10075283]]), array([[-0.01024166,  0.01055368,  0.02050131],
-       [ 0.01055368, -0.02237087,  0.01688979],
-       [ 0.02050131,  0.01688979, -0.0375238 ]]), array([[ 0.12671184, -0.01433474,  0.02723638],
-       [-0.01433474, -0.14088204, -0.17931589],
-       [ 0.02723638, -0.17931589, -0.02444228]]), array([[-0.16014897, -0.02679918, -0.04543456],
-       [-0.02679918,  0.10022505, -0.00879335],
-       [-0.04543456, -0.00879335,  0.04166568]]), array([[-0.00402506,  0.002771  , -0.00818893],
-       [ 0.002771  , -0.01166556,  0.030647  ],
-       [-0.00818893,  0.030647  , -0.02385252]]), array([[ 0.22509199, -0.0542183 , -0.14512212],
-       [-0.0542183 ,  0.19740045, -0.19416705],
-       [-0.14512212, -0.19416705, -0.20968977]]), array([[-0.04199518,  0.00633153,  0.0095243 ],
-       [ 0.00633153, -0.0412313 ,  0.00779501],
-       [ 0.0095243 ,  0.00779501, -0.008709  ]]), array([[-0.01526704, -0.00453384,  0.00066762],
-       [-0.00453384,  0.00118232, -0.00942245],
-       [ 0.00066762, -0.00942245,  0.01930127]]), array([[ 0.10831768,  0.20048024,  0.14076726],
-       [ 0.20048024, -0.03477257, -0.17548908],
-       [ 0.14076726, -0.17548908,  0.14875367]]), array([[ 0.00769695, -0.01365884,  0.02271052],
-       [-0.01365884, -0.03147613, -0.00627855],
-       [ 0.02271052, -0.00627855, -0.01101433]]), array([[-2.15330955e-02,  9.87301346e-05, -1.01358790e-02],
-       [ 9.87301346e-05, -1.04446946e-02, -6.19086344e-03],
-       [-1.01358790e-02, -6.19086344e-03, -3.05906473e-02]]), array([[ 0.00211825, -0.03898145,  0.00753301],
-       [-0.03898145, -0.06277214, -0.01163607],
-       [ 0.00753301, -0.01163607,  0.00236144]]), array([[ 0.13227647,  0.10810407,  0.00796324],
-       [ 0.10810407, -0.12828727,  0.06774318],
-       [ 0.00796324,  0.06774318, -0.02610096]]), array([[-0.01818922,  0.00591674, -0.00270092],
-       [ 0.00591674, -0.00115196,  0.00226975],
-       [-0.00270092,  0.00226975, -0.04380261]]), array([[ 8.25466578e-03,  3.03496464e-02,  7.67715713e-05],
-       [ 3.03496464e-02, -1.18966796e-02,  2.38031194e-02],
-       [ 7.67715713e-05,  2.38031194e-02,  2.51094917e-03]]), array([[-0.04320552, -0.01085999,  0.00987021],
-       [-0.01085999, -0.03591249,  0.01302825],
-       [ 0.00987021,  0.01302825, -0.04719566]]), array([[-1.36701859e-01,  8.12488830e-03, -2.00097608e-04],
-       [ 8.12488830e-03, -2.33012574e-01,  2.29616021e-02],
-       [-2.00097608e-04,  2.29616021e-02, -1.77560011e-01]])]
-Mus with CuEq [array([0., 0., 0.]), array([0., 0., 0.]), array([-0.01018337,  0.07967636, -0.05284215]), array([0.08521098, 0.17212277, 0.0358314 ]), array([ 0.28289768,  0.28236895, -0.00555047]), array([ 0.04190637, -0.07631145, -0.07351968]), array([-0.01957045, -0.06045121, -0.0344525 ]), array([-0.08445575, -0.18044102, -0.09136085]), array([-0.11918132, -0.00594997, -0.02389649]), array([0.10330213, 0.12977401, 0.05712783]), array([-0.02807657,  0.04544869,  0.05859242]), array([-0.05951197,  0.0982573 , -0.01496176]), array([-0.00609323,  0.10727438, -0.02698863]), array([ 0.15638201, -0.18891383, -0.09314335]), array([0.01964614, 0.06204767, 0.11447438]), array([-0.00158488,  0.16725947, -0.10078548]), array([-0.01433572, -0.10504014, -0.02706222]), array([-0.098367  , -0.37544957, -0.05972049]), array([0.00529281, 0.1258621 , 0.01264973]), array([0.04772522, 0.12782182, 0.05751518]), array([-0.05927667, -0.03502654,  0.11122711]), array([0.09038958, 0.75222341, 0.21450862])]
-alphas with CuEq [array([[0., 0., 0.],
-       [0., 0., 0.],
-       [0., 0., 0.]]), array([[0., 0., 0.],
-       [0., 0., 0.],
-       [0., 0., 0.]]), array([[-0.02238371,  0.00148635,  0.01891723],
-       [ 0.00148635, -0.01111487, -0.01141139],
-       [ 0.01891723, -0.01141139, -0.01233933]]), array([[-0.11346035, -0.13396121, -0.05878164],
-       [-0.13396121,  0.00447705,  0.00085378],
-       [-0.05878164,  0.00085378,  0.07254952]]), array([[-0.07519915,  0.27900851, -0.05652102],
-       [ 0.27900851, -0.10195596,  0.05542487],
-       [-0.05652102,  0.05542487,  0.18709985]]), array([[-0.19562905, -0.06195228,  0.28369622],
-       [-0.06195228,  0.15387262, -0.09952151],
-       [ 0.28369622, -0.09952151, -0.10059483]]), array([[-0.01019136,  0.01052028,  0.02046301],
-       [ 0.01052028, -0.02240311,  0.01687195],
-       [ 0.02046301,  0.01687195, -0.03754185]]), array([[ 0.1272397 , -0.01447346,  0.02709897],
-       [-0.01447346, -0.14109519, -0.17947835],
-       [ 0.02709897, -0.17947835, -0.02475699]]), array([[-0.16199533, -0.02726203, -0.04575121],
-       [-0.02726203,  0.10163332, -0.00883776],
-       [-0.04575121, -0.00883776,  0.04210377]]), array([[-0.00406616,  0.00273632, -0.00819202],
-       [ 0.00273632, -0.01170684,  0.03058038],
-       [-0.00819202,  0.03058038, -0.02377013]]), array([[ 0.22540157, -0.05418749, -0.14535383],
-       [-0.05418749,  0.19763634, -0.19521163],
-       [-0.14535383, -0.19521163, -0.21023525]]), array([[-0.04201822,  0.00634844,  0.00954331],
-       [ 0.00634844, -0.04126278,  0.00781253],
-       [ 0.00954331,  0.00781253, -0.00865449]]), array([[-0.01538518, -0.00415343,  0.00061107],
-       [-0.00415343,  0.00134476, -0.00950969],
-       [ 0.00061107, -0.00950969,  0.01925696]]), array([[ 0.10816751,  0.20086803,  0.14106293],
-       [ 0.20086803, -0.03458678, -0.17608679],
-       [ 0.14106293, -0.17608679,  0.14871806]]), array([[ 0.00759852, -0.0136368 ,  0.02281822],
-       [-0.0136368 , -0.03167691, -0.00632568],
-       [ 0.02281822, -0.00632568, -0.0107151 ]]), array([[-0.02157533,  0.00011242, -0.01015873],
-       [ 0.00011242, -0.01044832, -0.00618732],
-       [-0.01015873, -0.00618732, -0.03054478]]), array([[ 0.00244208, -0.03935516,  0.00753626],
-       [-0.03935516, -0.06314292, -0.01175026],
-       [ 0.00753626, -0.01175026,  0.0024084 ]]), array([[ 0.13214282,  0.1093545 ,  0.00906013],
-       [ 0.1093545 , -0.12880787,  0.06831363],
-       [ 0.00906013,  0.06831363, -0.02544671]]), array([[-0.01828129,  0.00603988, -0.00271923],
-       [ 0.00603988, -0.00084885,  0.00227971],
-       [-0.00271923,  0.00227971, -0.04401366]]), array([[ 0.0083267 ,  0.03034297,  0.0001707 ],
-       [ 0.03034297, -0.01191744,  0.02371842],
-       [ 0.0001707 ,  0.02371842,  0.00245967]]), array([[-0.04324906, -0.01101395,  0.01001515],
-       [-0.01101395, -0.03575211,  0.01303722],
-       [ 0.01001515,  0.01303722, -0.0473125 ]]), array([[-0.13352624,  0.00782697,  0.0018586 ],
-       [ 0.00782697, -0.2303644 ,  0.02189953],
-       [ 0.0018586 ,  0.02189953, -0.1833838 ]])]
+
+ #################################################### 
+
+SOURCE equi_nonlin_weight:
+Gate (48x0e+16x1o+16x2e -> 16x0e+16x1o+16x2e)
+Activation [x] (16x0e -> 16x0e)
+Activation [xx] (16x0e+16x0e -> 16x0e+16x0e)
+TARGET equi_nonlin_weight:
+Gate (48x0e+16x1o+16x2e -> 16x0e+16x1o+16x2e)
+Activation [x] (16x0e -> 16x0e)
+Activation [xx] (16x0e+16x0e -> 16x0e+16x0e)
+linear_1 max |Δ|: 3.833808485155032
+Gate max |Δ|: 5.479010967486884
+Full readout max |Δ|: 2.5989604043312693
+Gate-only max |Δ|: 0.0
+Checking cueq=False!
+Mus R: [0. 0. 0.] [0. 0. 0.]
+Alphas R: [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]] [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]]
+Mus R: [0. 0. 0.] [0. 0. 0.]
+Alphas R: [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]] [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]]
+Mus R: [-0.0741452   0.03108378 -0.0528359 ] [-0.0741452   0.03108378 -0.0528359 ]
+Alphas R: [[-0.01533539 -0.00557645  0.01936163]
+ [-0.00557645 -0.01825778  0.01061372]
+ [ 0.01936163  0.01061372 -0.01224474]] [[-0.01533539 -0.00557645  0.01936163]
+ [-0.00557645 -0.01825778  0.01061372]
+ [ 0.01936163  0.01061372 -0.01224474]]
+Mus R: [-0.10719125  0.15842673  0.03546132] [-0.10719125  0.15842673  0.03546132]
+Alphas R: [[ 0.09059141  0.01600133 -0.02999368]
+ [ 0.01600133 -0.19894695 -0.05035635]
+ [-0.02999368 -0.05035635  0.07192177]] [[ 0.09059141  0.01600133 -0.02999368]
+ [ 0.01600133 -0.19894695 -0.05035635]
+ [-0.02999368 -0.05035635  0.07192177]]
+Mus R: [-0.10268353  0.38510245 -0.00588804] [-0.10268353  0.38510245 -0.00588804]
+Alphas R: [[-0.33687574 -0.12776469 -0.07607161]
+ [-0.12776469  0.1600307  -0.02136358]
+ [-0.07607161 -0.02136358  0.18678978]] [[-0.33687574 -0.12776469 -0.07607161]
+ [-0.12776469  0.1600307  -0.02136358]
+ [-0.07607161 -0.02136358  0.18678978]]
+Mus R: [ 0.08743645 -0.00615927 -0.07061784] [ 0.08743645 -0.00615927 -0.07061784]
+Alphas R: [[ 0.11891517 -0.11999054  0.22700441]
+ [-0.11999054 -0.1605136   0.19556806]
+ [ 0.22700441  0.19556806 -0.10075283]] [[ 0.11891517 -0.11999054  0.22700441]
+ [-0.11999054 -0.1605136   0.19556806]
+ [ 0.22700441  0.19556806 -0.10075283]]
+Mus R: [ 0.04267501 -0.04748293 -0.03425306] [ 0.04267501 -0.04748293 -0.03425306]
+Alphas R: [[-2.84783183e-02 -2.47344542e-05 -4.37633474e-03]
+ [-2.47344542e-05 -4.13421045e-03  2.61995545e-02]
+ [-4.37633474e-03  2.61995545e-02 -3.75238020e-02]] [[-2.84783183e-02 -2.47344542e-05 -4.37633474e-03]
+ [-2.47344542e-05 -4.13421045e-03  2.61995545e-02]
+ [-4.37633474e-03  2.61995545e-02 -3.75238020e-02]]
+Mus R: [ 0.11195338 -0.1629099  -0.08887766] [ 0.11195338 -0.1629099  -0.08887766]
+Alphas R: [[-0.06156932  0.12303892  0.16891031]
+ [ 0.12303892  0.04739912 -0.06607054]
+ [ 0.16891031 -0.06607054 -0.02444228]] [[-0.06156932  0.12303892  0.16891031]
+ [ 0.12303892  0.04739912 -0.06607054]
+ [ 0.16891031 -0.06607054 -0.02444228]]
+Mus R: [-0.05348988 -0.10433707 -0.02351123] [-0.05348988 -0.10433707 -0.02351123]
+Alphas R: [[ 0.05834032 -0.09934567 -0.01510201]
+ [-0.09934567 -0.11826424 -0.04374416]
+ [-0.01510201 -0.04374416  0.04166568]] [[ 0.05834032 -0.09934567 -0.01510201]
+ [-0.09934567 -0.11826424 -0.04374416]
+ [-0.01510201 -0.04374416  0.04166568]]
+Mus R: [-0.06063153  0.15454394  0.05714793] [-0.06063153  0.15454394  0.05714793]
+Alphas R: [[-0.01215519  0.00192293 -0.03063554]
+ [ 0.00192293 -0.00353543  0.00823168]
+ [-0.03063554  0.00823168 -0.02385252]] [[-0.01215519  0.00192293 -0.03063554]
+ [ 0.00192293 -0.00353543  0.00823168]
+ [-0.03063554  0.00823168 -0.02385252]]
+Mus R: [-0.05477258 -0.00125565  0.05943849] [-0.05477258 -0.00125565  0.05943849]
+Alphas R: [[ 0.25127776  0.03909994  0.09559254]
+ [ 0.03909994  0.17121468 -0.22276297]
+ [ 0.09559254 -0.22276297 -0.20968977]] [[ 0.25127776  0.03909994  0.09559254]
+ [ 0.03909994  0.17121468 -0.22276297]
+ [ 0.09559254 -0.22276297 -0.20968977]]
+Mus R: [-0.1148702  -0.00243622 -0.01503451] [-0.1148702  -0.00243622 -0.01503451]
+Alphas R: [[-0.04690554 -0.00349654 -0.00198853]
+ [-0.00349654 -0.03632094  0.0121458 ]
+ [-0.00198853  0.0121458  -0.008709  ]] [[-0.04690554 -0.00349654 -0.00198853]
+ [-0.00349654 -0.03632094  0.0121458 ]
+ [-0.00198853  0.0121458  -0.008709  ]]
+Mus R: [-0.0959047   0.04854511 -0.02697527] [-0.0959047   0.04854511 -0.02697527]
+Alphas R: [[ 0.0009964  -0.00485586  0.00849389]
+ [-0.00485586 -0.01508112 -0.00413304]
+ [ 0.00849389 -0.00413304  0.01930127]] [[ 0.0009964  -0.00485586  0.00849389]
+ [-0.00485586 -0.01508112 -0.00413304]
+ [ 0.00849389 -0.00413304  0.01930127]]
+Mus R: [ 0.23800618  0.04537357 -0.09384094] [ 0.23800618  0.04537357 -0.09384094]
+Alphas R: [[-0.17262099 -0.03828023  0.22236163]
+ [-0.03828023  0.2461661   0.03416348]
+ [ 0.22236163  0.03416348  0.14875367]] [[-0.17262099 -0.03828023  0.22236163]
+ [-0.03828023  0.2461661   0.03416348]
+ [ 0.22236163  0.03416348  0.14875367]]
+Mus R: [-0.04365667  0.04784816  0.11450695] [-0.04365667  0.04784816  0.11450695]
+Alphas R: [[-0.00985395  0.02379186  0.01679264]
+ [ 0.02379186 -0.01392522  0.01652861]
+ [ 0.01679264  0.01652861 -0.01101433]] [[-0.00985395  0.02379186  0.01679264]
+ [ 0.02379186 -0.01392522  0.01652861]
+ [ 0.01679264  0.01652861 -0.01101433]]
+Mus R: [-0.14563916  0.08243535 -0.10077541] [-0.14563916  0.08243535 -0.10077541]
+Alphas R: [[-0.0133023  -0.00485078  0.00029351]
+ [-0.00485078 -0.01867549 -0.01187336]
+ [ 0.00029351 -0.01187336 -0.03059065]] [[-0.0133023  -0.00485078  0.00029351]
+ [-0.00485078 -0.01867549 -0.01187336]
+ [ 0.00029351 -0.01187336 -0.03059065]]
+Mus R: [ 0.08473701 -0.06505484 -0.02648474] [ 0.08473701 -0.06505484 -0.02648474]
+Alphas R: [[-0.01279061  0.04758909  0.01384364]
+ [ 0.04758909 -0.04786327  0.00070574]
+ [ 0.01384364  0.00070574  0.00236144]] [[-0.01279061  0.04758909  0.01384364]
+ [ 0.04758909 -0.04786327  0.00070574]
+ [ 0.01384364  0.00070574  0.00236144]]
+Mus R: [ 0.27798159 -0.27150736 -0.05864841] [ 0.27798159 -0.27150736 -0.05864841]
+Alphas R: [[-0.15676721  0.05877538 -0.0546857 ]
+ [ 0.05877538  0.1607564   0.04076795]
+ [-0.0546857   0.04076795 -0.02610096]] [[-0.15676721  0.05877538 -0.0546857 ]
+ [ 0.05877538  0.1607564   0.04076795]
+ [-0.0546857   0.04076795 -0.02610096]]
+Mus R: [-0.10669451  0.06800469  0.01260538] [-0.10669451  0.06800469  0.01260538]
+Alphas R: [[-0.01053532 -0.01033572 -0.00331612]
+ [-0.01033572 -0.00880586 -0.00120419]
+ [-0.00331612 -0.00120419 -0.04380261]] [[-0.01053532 -0.01033572 -0.00331612]
+ [-0.01033572 -0.00880586 -0.00120419]
+ [-0.00331612 -0.00120419 -0.04380261]]
+Mus R: [-0.0868198   0.10518689  0.05753938] [-0.0868198   0.10518689  0.05753938]
+Alphas R: [[-0.03314241 -0.00644903 -0.02057572]
+ [-0.00644903  0.02950039  0.01196805]
+ [-0.02057572  0.01196805  0.00251095]] [[-0.03314241 -0.00644903 -0.02057572]
+ [-0.00644903  0.02950039  0.01196805]
+ [-0.02057572  0.01196805  0.00251095]]
+Mus R: [ 0.00048913 -0.06900133  0.10970058] [ 0.00048913 -0.06900133  0.10970058]
+Alphas R: [[-0.02833072  0.00227202 -0.00634769]
+ [ 0.00227202 -0.05078728  0.01506198]
+ [-0.00634769  0.01506198 -0.04719566]] [[-0.02833072  0.00227202 -0.00634769]
+ [ 0.00227202 -0.05078728  0.01506198]
+ [-0.00634769  0.01506198 -0.04719566]]
+Mus R: [-0.60272038  0.45244098  0.21533117] [-0.60272038  0.45244098  0.21533117]
+Alphas R: [[-0.21597125  0.03764132 -0.01998538]
+ [ 0.03764132 -0.15374318  0.01130751]
+ [-0.01998538  0.01130751 -0.17756001]] [[-0.21597125  0.03764132 -0.01998538]
+ [ 0.03764132 -0.15374318  0.01130751]
+ [-0.01998538  0.01130751 -0.17756001]]
+
+Checking cueq=True!
+
+Mus R: [0. 0. 0.] [0. 0. 0.]
+Alphas R: [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]] [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]]
+Mus R: [0. 0. 0.] [0. 0. 0.]
+Alphas R: [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]] [[0. 0. 0.]
+ [0. 0. 0.]
+ [0. 0. 0.]]
+Mus R: [-0.07411352  0.03105417 -0.05284215] [-0.07409344  0.03101912 -0.05284215]
+Alphas R: [[-0.015321   -0.00553692  0.01931438]
+ [-0.00553692 -0.01832617  0.01068737]
+ [ 0.01931438  0.01068737 -0.01219074]] [[-0.0152193  -0.00562272  0.01934117]
+ [-0.00562272 -0.01827929  0.01067711]
+ [ 0.01934117  0.01067711 -0.01233933]]
 ----------------------------- Captured stderr call -----------------------------
 /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/e3nn/o3/_wigner.py:10: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
   _Jd, _W3j_flat, _W3j_indices = torch.load(os.path.join(os.path.dirname(__file__), 'constants.pt'))
@@ -1669,46 +1324,43 @@ Error while loading libcue_ops.so: /raven/ptmp/ngoen/mace_alpha_testing/lib/pyth
   /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/e3nn/o3/_wigner.py:10: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
     _Jd, _W3j_flat, _W3j_indices = torch.load(os.path.join(os.path.dirname(__file__), 'constants.pt'))
 
-tests/test_run_train_dipole_polar.py::test_run_train_dipole
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
   /raven/ptmp/ngoen/mace_tensors_test/mace/calculators/mace.py:197: UserWarning: Environment variable TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD detected, since the`weights_only` argument was not explicitly passed to `torch.load`, forcing weights_only=False.
     torch.load(f=model_path, map_location=device)
 
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
   /raven/ptmp/ngoen/mace_tensors_test/mace/modules/models.py:873: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
     "atomic_numbers", torch.tensor(atomic_numbers, dtype=torch.int64)
 
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
   /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/torch/jit/_check.py:178: UserWarning: The TorchScript type system doesn't support instance-level annotations on empty non-base types in `__init__`. Instead, either 1) use a type annotation in the class body, or 2) wrap the type in `torch.jit.Attribute`.
     warnings.warn(
 
-tests/test_run_train_dipole_polar.py: 10 warnings
+tests/test_run_train_dipole_polar_eq.py: 10 warnings
   /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/cuequivariance_torch/operations/linear.py:125: DeprecationWarning: `use_fallback` is deprecated, please use `method` instead
     warnings.warn(
 
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
   /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/cuequivariance_torch/primitives/segmented_polynomial.py:176: UserWarning: cuequivariance_ops_torch is not available. Falling back to naive implementation.
     warnings.warn(
 
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
   /raven/ptmp/ngoen/mace_alpha_testing/lib/python3.12/site-packages/cuequivariance_torch/operations/tp_fully_connected.py:142: DeprecationWarning: `use_fallback` is deprecated, please use `method` instead
     warnings.warn(
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ============================
-FAILED tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar - as...
-FAILED tests/test_run_train_dipole_polar.py::test_run_train_dipole_polar_cueq
-======= 2 failed, 1 passed, 1 skipped, 30 warnings in 712.61s (0:11:52) ========
+FAILED tests/test_run_train_dipole_polar_eq.py::test_run_train_dipole_polar_cueq_with_rotation
+================== 1 failed, 28 warnings in 659.52s (0:10:59) ==================

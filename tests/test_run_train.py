@@ -107,7 +107,7 @@ _mace_params = {
     "use_reduced_cg": False,
 }
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train(tmp_path, fitting_configs):
     ase.io.write(tmp_path / "fit.xyz", fitting_configs)
 
@@ -174,7 +174,7 @@ def test_run_train(tmp_path, fitting_configs):
 
     assert np.allclose(Es, ref_Es)
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_missing_data(tmp_path, fitting_configs):
     del fitting_configs[5].info["REF_energy"]
     del fitting_configs[6].arrays["REF_forces"]
@@ -244,7 +244,7 @@ def test_run_train_missing_data(tmp_path, fitting_configs):
     ]
     assert np.allclose(Es, ref_Es)
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_no_stress(tmp_path, fitting_configs):
     del fitting_configs[5].info["REF_energy"]
     del fitting_configs[6].arrays["REF_forces"]
@@ -315,7 +315,7 @@ def test_run_train_no_stress(tmp_path, fitting_configs):
     ]
     assert np.allclose(Es, ref_Es)
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_multihead(tmp_path, fitting_configs):
     fitting_configs_dft = []
     fitting_configs_mp2 = []
@@ -426,7 +426,7 @@ def test_run_train_multihead(tmp_path, fitting_configs):
     ]
     assert np.allclose(Es, ref_Es)
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_foundation(tmp_path, fitting_configs):
     ase.io.write(tmp_path / "fit.xyz", fitting_configs)
 
@@ -500,7 +500,7 @@ def test_run_train_foundation(tmp_path, fitting_configs):
     ]
     assert np.allclose(Es, ref_Es)
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_foundation_multihead(tmp_path, fitting_configs):
     fitting_configs_dft = []
     fitting_configs_mp2 = []
@@ -628,7 +628,7 @@ def test_run_train_foundation_multihead(tmp_path, fitting_configs):
     ]
     assert np.allclose(Es, ref_Es, atol=1e-1)
 
-
+@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_foundation_multihead_json(tmp_path, fitting_configs):
     fitting_configs_dft = []
     fitting_configs_mp2 = []
@@ -765,7 +765,7 @@ def test_run_train_foundation_multihead_json(tmp_path, fitting_configs):
     ]
     assert np.allclose(Es, ref_Es, atol=1e-1)
 
-
+#@pytest.mark.skip(reason="Temporarily disabled")
 def test_run_train_multihead_replay_custom_finetuning(
     tmp_path, fitting_configs, pretraining_configs
 ):

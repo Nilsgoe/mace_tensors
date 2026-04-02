@@ -276,6 +276,7 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
         irreps_gated = o3.Irreps(
             [(mul, ir) for mul, ir in MLP_irreps if ir.l > 0 and ir in self.irreps_out]
         )
+        print("GGGGGGGGGG",gate)
         irreps_gates = o3.Irreps([mul, "0e"] for mul, _ in irreps_gated)
         self.equivariant_nonlin = nn.Gate(
             irreps_scalars=irreps_scalars,
@@ -284,8 +285,9 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
             act_gates=[gate] * len(irreps_gates),
             irreps_gated=irreps_gated,
         )
-        self.non_linearity = self.equivariant_nonlin
+        #self.non_linearity = self.equivariant_nonlin
         self.irreps_nonlin = self.equivariant_nonlin.irreps_in.simplify()
+        
         self.linear_1 = Linear(
             irreps_in=irreps_in,
             irreps_out=self.irreps_nonlin,
@@ -313,15 +315,16 @@ class AtomicEnergiesBlock(torch.nn.Module):
     def __init__(self, atomic_energies: Union[np.ndarray, torch.Tensor]):
         super().__init__()
         # assert len(atomic_energies.shape) == 1
-
+        #print("CCC",atomic_energies)
         self.register_buffer(
             "atomic_energies",
             torch.tensor(atomic_energies, dtype=torch.get_default_dtype()),
         )  # [n_elements, n_heads]
-
+        #print("TTTT",self.atomic_energies)
     def forward(
         self, x: torch.Tensor  # one-hot of elements [..., n_elements]
     ) -> torch.Tensor:  # [..., ]
+        #print("\nAhhh\n",x,self.atomic_energies)
         return torch.matmul(x, torch.atleast_2d(self.atomic_energies).T)
 
     def __repr__(self):

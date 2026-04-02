@@ -71,7 +71,7 @@ class MACECalculator(Calculator):
         default_dtype: str, default dtype of model
         charges_key: str, Array field of atoms object where atomic charges are stored
         model_type: str, type of model to load
-                    Options: [MACE, DipoleMACE, EnergyDipoleMACE]
+                    Options: [MACE, DipoleMACE,DipolePolarizabilityMACE, EnergyDipoleMACE]
 
     Dipoles are returned in units of Debye
     """
@@ -96,7 +96,7 @@ class MACECalculator(Calculator):
     ):
         Calculator.__init__(self, **kwargs)
         if enable_cueq or enable_oeq:
-            assert model_type == "MACE", "CuEq only supports MACE models"
+            assert model_type in ["MACE","DipolePolarizabilityMACE"], "CuEq only supports MACE and DipolePolarizabilityMACE  models"
             if compile_mode is not None:
                 logging.warning(
                     "CuEq or Oeq does not support torch.compile, setting compile_mode to None"

@@ -1,0 +1,30 @@
+============================= test session starts ==============================
+platform linux -- Python 3.7.6, pytest-5.3.5, py-1.8.1, pluggy-0.13.1
+rootdir: /raven/ptmp/ngoen/mace_tensors_test
+plugins: astropy-header-0.1.2, remotedata-0.3.2, arraydiff-0.3, hypothesis-5.5.4, openfiles-0.4.0, doctestplus-0.5.0
+collected 0 items / 3 errors
+
+==================================== ERRORS ====================================
+___________________ ERROR collecting tests/test_run_train.py ___________________
+ImportError while importing test module '/raven/ptmp/ngoen/mace_tensors_test/tests/test_run_train.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests/test_run_train.py:7: in <module>
+    import ase.io
+E   ModuleNotFoundError: No module named 'ase'
+_______________ ERROR collecting tests/test_run_train_allkeys.py _______________
+ImportError while importing test module '/raven/ptmp/ngoen/mace_tensors_test/tests/test_run_train_allkeys.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests/test_run_train_allkeys.py:7: in <module>
+    import ase.io
+E   ModuleNotFoundError: No module named 'ase'
+____________ ERROR collecting tests/test_run_train_dipole_polar.py _____________
+ImportError while importing test module '/raven/ptmp/ngoen/mace_tensors_test/tests/test_run_train_dipole_polar.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+tests/test_run_train_dipole_polar.py:7: in <module>
+    import ase.io
+E   ModuleNotFoundError: No module named 'ase'
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 3 errors in 0.21s ===============================

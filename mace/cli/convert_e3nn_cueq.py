@@ -42,16 +42,16 @@ def reshape_like(src: torch.Tensor, ref_shape: torch.Size) -> torch.Tensor:
 
 
 def get_kmax_pairs(
-    num_product_irreps: int, correlation: int, num_layers: int
+        num_product_irreps: int, correlation: int, num_layers: int, size_mlp: int=0,
 ) -> List[Tuple[int, int]]:
     """Determine kmax pairs based on num_product_irreps and correlation"""
     if correlation == 2:
         kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
-        kmax_pairs = kmax_pairs + [[num_layers - 1, 0]]
+        kmax_pairs = kmax_pairs + [[num_layers - 1, size_mlp]]
         return kmax_pairs
     if correlation == 3:
         kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
-        kmax_pairs = kmax_pairs + [[num_layers - 1, 0]]
+        kmax_pairs = kmax_pairs + [[num_layers - 1, size_mlp]]
         return kmax_pairs
     raise NotImplementedError(f"Correlation {correlation} not supported")
 
@@ -64,9 +64,10 @@ def transfer_symmetric_contractions(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int=0,
 ):
     """Transfer symmetric contraction weights"""
-    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers)
+    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers, size_mlp)
     suffixes = ["_max"] + [f".{i}" for i in range(correlation - 1)]
     for i, kmax in kmax_pairs:
         irreps_in = o3.Irreps(
@@ -119,6 +120,7 @@ def transfer_weights(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int=0,
 ):
     """Transfer weights with proper remapping"""
     # Get source state dict
@@ -135,6 +137,7 @@ def transfer_weights(
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
     transferred_keys = set()
@@ -208,7 +211,31 @@ def run(
     # Create new model with cuequivariance config
     logging.info("Creating new model with cuequivariance settings")
     target_model = source_model.__class__(**config).to(device)
+    
+    size_mlp=len([irreps for irreps in config["MLP_irreps"]]) - 1
+    print("RRRR",size_mlp,config["MLP_irreps"])
+    print("Source",source_model)
+    print("target",target_model)
+    torch.set_printoptions(threshold=torch.inf)
+    print("\n #################################################### \n")
+    #print("SOURCE linear_1 weight:")
+    #print(source_model.readouts[-1].linear_1.weight)
 
+    #print("SOURCE linear_2 weight:")
+    #print(source_model.readouts[-1].linear_2.weight)
+    print("SOURCE equi_nonlin_weight:")
+    #print(source_model.readouts[-1].equivariant_nonlin.weight)
+    print(source_model.readouts[-1].equivariant_nonlin)
+    print(source_model.readouts[-1].equivariant_nonlin.act_scalars)
+    print(source_model.readouts[-1].equivariant_nonlin.act_gates)
+    # Target
+    #print("TARGET linear_1 weight:")
+    #print(target_model.readouts[-1].linear_1.weight)
+
+    #print("TARGET linear_2 weight:")
+    #print(target_model.readouts[-1].linear_2.weight)
+    #print("TARGET equi_nonlin_weight:")
+    #print(target_model.readouts[-1].equivariant_nonlin.weight)
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]
     transfer_weights(
@@ -218,8 +245,65 @@ def run(
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
+    #print("TARGET linear_1 weight:")
+    #print(target_model.readouts[-1].linear_1.weight)
 
+    #print("TARGET linear_2 weight:")
+    #print(target_model.readouts[-1].linear_2.weight)
+    print("TARGET equi_nonlin_weight:")
+    print(target_model.readouts[-1].equivariant_nonlin)
+    print(target_model.readouts[-1].equivariant_nonlin.act_scalars)
+    print(target_model.readouts[-1].equivariant_nonlin.act_gates)
+   
+    source_model.eval()
+    target_model.eval()
+     
+    readout_src = source_model.readouts[-1]
+    readout_tgt = target_model.readouts[-1]
+   
+    in_dim = readout_src.linear_1.irreps_in.dim
+    torch.manual_seed(0)
+
+    x = torch.randn(1, in_dim, dtype=next(source_model.parameters()).dtype)
+
+    # move to correct device
+    x = x.to(next(source_model.parameters()).device)
+
+    z_src = readout_src.linear_1(x)
+    z_tgt = readout_tgt.linear_1(x)
+
+    print("linear_1 max |Δ|:", (z_src - z_tgt).abs().max().item())
+    
+    g_src = readout_src.equivariant_nonlin(z_src)
+    g_tgt = readout_tgt.equivariant_nonlin(z_tgt)
+
+    print("Gate max |Δ|:", (g_src - g_tgt).abs().max().item()) 
+
+    y_src = readout_src.linear_2(g_src)
+    y_tgt = readout_tgt.linear_2(g_tgt)
+
+    print("Full readout max |Δ|:", (y_src - y_tgt).abs().max().item())
+
+    gate_dim = readout_src.irreps_nonlin.dim
+    z = torch.randn(1, gate_dim, dtype=x.dtype, device=x.device)
+
+    g_src = readout_src.equivariant_nonlin(z)
+    g_tgt = readout_tgt.equivariant_nonlin(z)
+
+    print("Gate-only max |Δ|:", (g_src - g_tgt).abs().max().item())
+
+    y_src = readout_src.linear_2(g_src)
+    y_tgt = readout_tgt.linear_2(g_tgt)
+
+    print("Gate+l2 max |Δ|:", (y_src - y_tgt).abs().max().item())
+
+    #print("Weight comparison:\n",source_model.readouts[-1].linear_1.weight - target_model.readouts[-1].linear_1.weight)
+    #print(torch.isclose(target_model.readouts[-1].linear_1.weight,source_model.readouts[-1].linear_1.weight))
+
+
+    #print(target_model.readouts[-1].equivariant_nonlin.weight)
     if return_model:
         return target_model
 

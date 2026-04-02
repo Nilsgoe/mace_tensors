@@ -81,7 +81,7 @@ def load_foundations_elements(
                 model_foundations.interactions[i]
                 .skip_tp.weight.reshape(
                     num_channels_foundation,
-                    len(model_foundations.interactions[i].skip_tp.irreps_in1),
+                    #len(model_foundations.interactions[i].skip_tp.irreps_in1),
                     num_species_foundations,
                     num_channels_foundation,
                 )[:, indices_weights, :]
@@ -117,20 +117,16 @@ def load_foundations_elements(
             )
     # Transferring products
     for i in range(2):  # Assuming 2 products modules
-        print(i, model.products[i])
+        #print(i, model.products[i])
         max_range = max_L + 1 if i == 0 else 1
-        for j in range(max_range):  # Assuming 3 contractions in symmetric_contractions
-            print(j, model.products[i].symmetric_contractions.contractions[j])
-            print(indices_weights)
-            w = (
-                model_foundations.products[i]
-                .symmetric_contractions.contractions[j]
-                .weights_max
-            )
-            print(w.shape)
-            print(w.detach().cpu())
-            # print(model_foundations.products[i].symmetric_contractions.contractions[j].weights_max)#[indices_weights, :, :])
-            exit()
+        for j in range(max_range): # Assuming 3 contractions in symmetric_contractions
+            #print(j, model.products[i].symmetric_contractions.contractions[j])
+            #print(indices_weights)
+            w = model_foundations.products[i].symmetric_contractions.contractions[j].weights_max
+            #print(w.shape)
+            #print(w.detach().cpu())
+            #print(model_foundations.products[i].symmetric_contractions.contractions[j].weights_max)#[indices_weights, :, :])
+            #exit()
             model.products[i].symmetric_contractions.contractions[j].weights_max = (
                 torch.nn.Parameter(
                     model_foundations.products[i]

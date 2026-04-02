@@ -316,8 +316,9 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
             if model.num_interactions.item() > 1
             else None
         )
-        config["atomic_energies"] = model.atomic_energies_fn.atomic_energies.cpu().numpy()
-        print("BBBB",model.atomic_energies_fn.atomic_energies.cpu().numpy())
+        config["atomic_energies"] = (
+            model.atomic_energies_fn.atomic_energies.cpu().numpy(),
+        )
         config["atomic_inter_scale"] = scale.cpu().numpy()
         config["atomic_inter_shift"] = shift.cpu().numpy()
         config["MLP_irreps"] = (
@@ -330,20 +331,7 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         config["use_polarizability"] = model.use_polarizability
         config["only_dipole"] = False  # model.only_dipole
         config["gate"] = torch.nn.functional.silu
-        #print(1,dir(model.readouts[-1].equivariant_nonlin))
-        #print(2,dir(model.readouts[-1].equivariant_nonlin._modules))
-        #print(3,dir(model.readouts[-1].equivariant_nonlin.act_gates.acts))
-        #print(4,dir(model.readouts[-1].equivariant_nonlin.act_gates.acts.0.f))
-        #exit()
-        #config["gate"] = (
-        #    model.readouts[-1]  # pylint: disable=protected-access
-        #    .non_linearity._modules["acts"][0] #non_linearity equivariant_nonlin
-        #    .f
-        #    if model.num_interactions.item() > 1
-        #    else None
-        #)
         config["MLP_irreps"] = model_mlp_irreps
-        print("Gate", config["gate"])
     return config
 
 
