@@ -866,7 +866,9 @@ class AtomicDielectricMACE(torch.nn.Module):
         atomic_energies_fn: Optional[  # pylint: disable=unused-argument
             Callable  # pylint: disable=unused-argument
         ] = None,  # pylint: disable=unused-argument
-        embedding_specs: Optional[Dict[str, Any]] = None,  # pylint: disable=unused-argument
+        embedding_specs: Optional[
+            Dict[str, Any]
+        ] = None,  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.register_buffer(

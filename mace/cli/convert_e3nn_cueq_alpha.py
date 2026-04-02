@@ -3,10 +3,10 @@ import logging
 import os
 from typing import Dict, List, Tuple, Union
 
-import numpy as np
 import torch
 from e3nn import o3
 
+from mace.modules.wrapper_ops import CuEquivarianceConfig
 from mace.tools.cg import O3_e3nn
 from mace.tools.cg_cueq_tools import symmetric_contraction_proj
 from mace.tools.scripts_utils import extract_config_mace_model
@@ -42,7 +42,7 @@ def reshape_like(src: torch.Tensor, ref_shape: torch.Size) -> torch.Tensor:
 
 
 def get_kmax_pairs(
-    num_product_irreps: int, correlation: int, num_layers: int
+    num_product_irreps: int, correlation: int, num_layers: int, size_mlp: int = 0
 ) -> List[Tuple[int, int]]:
     """Determine kmax pairs based on num_product_irreps and correlation"""
     if correlation == 2:
@@ -51,7 +51,7 @@ def get_kmax_pairs(
         return kmax_pairs
     if correlation == 3:
         kmax_pairs = [[i, num_product_irreps] for i in range(num_layers - 1)]
-        kmax_pairs = kmax_pairs + [[num_layers - 1, 0]]
+        kmax_pairs = kmax_pairs + [[num_layers - 1, size_mlp]]
         return kmax_pairs
     raise NotImplementedError(f"Correlation {correlation} not supported")
 
@@ -64,65 +64,55 @@ def transfer_symmetric_contractions(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int = 0,
 ):
-    """Transfer symmetric contraction weights from CuEq to E3nn format"""
-    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers)
+    """Transfer symmetric contraction weights"""
+    kmax_pairs = get_kmax_pairs(num_product_irreps, correlation, num_layers, size_mlp)
     suffixes = ["_max"] + [f".{i}" for i in range(correlation - 1)]
+    print("kmax_pairs:", kmax_pairs)
+    # kmax_pairs = [[0,2],[1,2]]
     for i, kmax in kmax_pairs:
-        # Get the combined weight tensor from source
         irreps_in = o3.Irreps(
             irrep.ir for irrep in products[i].symmetric_contractions.irreps_in
         )
         irreps_out = o3.Irreps(
             irrep.ir for irrep in products[i].symmetric_contractions.irreps_out
         )
-        wm = source_dict[f"products.{i}.symmetric_contractions.weight"]
+        if use_reduced_cg:
+            wm = torch.concatenate(
+                [
+                    source_dict[
+                        f"products.{i}.symmetric_contractions.contractions.{k}.weights{j}"
+                    ]
+                    for k in range(kmax + 1)
+                    for j in suffixes
+                ],
+                dim=1,
+            )
+        else:
+            wm = torch.concatenate(
+                [
+                    source_dict[
+                        f"products.{i}.symmetric_contractions.contractions.{k}.weights{j}"
+                    ]
+                    for k in range(kmax + 1)
+                    for j in suffixes
+                    if not source_dict.get(
+                        f"products.{i}.symmetric_contractions.contractions.{k}.weights{j.replace('.', '_')}_zeroed",
+                        False,
+                    )
+                ],
+                dim=1,
+            )
         if use_reduced_cg:
             _, proj = symmetric_contraction_proj(
                 cue.Irreps(O3_e3nn, str(irreps_in)),
                 cue.Irreps(O3_e3nn, str(irreps_out)),
                 list(range(1, correlation + 1)),
             )
-            proj = np.linalg.pinv(proj)
             proj = torch.tensor(proj, dtype=wm.dtype, device=wm.device)
             wm = torch.einsum("zau,ab->zbu", wm, proj)
-        # Get split sizes based on target dimensions
-        splits = []
-        for k in range(kmax + 1):
-            for suffix in suffixes:
-                key = f"products.{i}.symmetric_contractions.contractions.{k}.weights{suffix}"
-                target_shape = target_dict[key].shape
-                splits.append(target_shape[1])
-                if (
-                    target_dict.get(
-                        f"products.{i}.symmetric_contractions.contractions.{k}.weights{suffix.replace('.', '_')}"
-                        + "_zeroed",
-                        False,
-                    )
-                    and not use_reduced_cg
-                ):
-                    splits[-1] = 0
-
-        # Split the weights using the calculated sizes
-        weights_split = torch.split(wm, splits, dim=1)
-
-        # Assign back to target dictionary
-        idx = 0
-        for k in range(kmax + 1):
-            for suffix in suffixes:
-                key = f"products.{i}.symmetric_contractions.contractions.{k}.weights{suffix}"
-                if (
-                    target_dict.get(
-                        f"products.{i}.symmetric_contractions.contractions.{k}.weights{suffix.replace('.', '_')}_zeroed",
-                        False,
-                    )
-                    and not use_reduced_cg
-                ):
-                    continue
-                target_dict[key] = (
-                    weights_split[idx] if splits[idx] > 0 else target_dict[key]
-                )
-                idx += 1
+        target_dict[f"products.{i}.symmetric_contractions.weight"] = wm
 
 
 def transfer_weights(
@@ -132,14 +122,15 @@ def transfer_weights(
     correlation: int,
     num_layers: int,
     use_reduced_cg: bool,
+    size_mlp: int = 0,
 ):
-    """Transfer weights from CuEq to E3nn format"""
-    # Get state dicts
+    """Transfer weights with proper remapping"""
+    # Get source state dict
     source_dict = source_model.state_dict()
     target_dict = target_model.state_dict()
 
+    products = source_model.products
     # Transfer symmetric contractions
-    products = target_model.products
     transfer_symmetric_contractions(
         source_dict,
         target_dict,
@@ -148,15 +139,17 @@ def transfer_weights(
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
-    # Transfer remaining matching keys
     transferred_keys = set()
     remaining_keys = (
         set(source_dict.keys()) & set(target_dict.keys()) - transferred_keys
     )
+
     remaining_keys = {k for k in remaining_keys if "symmetric_contraction" not in k}
 
+    # exit()
     if remaining_keys:
         for key in remaining_keys:
             src = source_dict[key]
@@ -167,28 +160,33 @@ def transfer_weights(
             elif shapes_match_up_to_unsqueeze(src.shape, tgt.shape):
                 logging.debug(
                     f"Transferring key {key} after adapting shape "
-                    f"{tuple(src.shape)} → {tuple(tgt.shape)}"
+                    f"{tuple(src.shape)} → {tuple(tgt.shape)} -> {reshape_like(src, tgt.shape).shape}"
                 )
                 target_dict[key] = reshape_like(src, tgt.shape)
             else:
-                logging.warning(
+                logging.debug(
                     f"Shape mismatch for key {key}: "
                     f"source {source_dict[key].shape} vs target {target_dict[key].shape}"
                 )
-
     # Transfer avg_num_neighbors
     for i in range(num_layers):
         target_model.interactions[i].avg_num_neighbors = source_model.interactions[
             i
         ].avg_num_neighbors
-
-    # Load state dict into target model
     target_model.load_state_dict(target_dict)
 
 
-def run(input_model, output_model="_e3nn.model", device="cpu", return_model=True):
+def run(
+    input_model,
+    output_model="_cueq.model",
+    device="cpu",
+    return_model=True,
+):
+    # Setup logging
 
-    # Load CuEq model
+    # Load original model
+    # logging.warning(f"Loading model")
+    # check if input_model is a path or a model
     if isinstance(input_model, str):
         source_model = torch.load(input_model, map_location=device)
     else:
@@ -203,12 +201,27 @@ def run(input_model, output_model="_e3nn.model", device="cpu", return_model=True
     correlation = config["correlation"]
     use_reduced_cg = config.get("use_reduced_cg", True)
 
-    # Remove CuEq config
-    config.pop("cueq_config", None)
+    # Add cuequivariance config
+    config["cueq_config"] = CuEquivarianceConfig(
+        enabled=True,
+        layout="ir_mul",
+        group="O3_e3nn",
+        optimize_all=True,
+        conv_fusion=(device == "cuda"),
+    )
 
-    # Create new model without CuEq config
-    logging.info("Creating new model without CuEq settings")
-    target_model = source_model.__class__(**config)
+    # Create new model with cuequivariance config
+    logging.info("Creating new model with cuequivariance settings")
+    target_model = source_model.__class__(**config).to(device)
+
+    if str(config["MLP_irreps"]) == "16x0e":
+        size_mlp = 0
+    elif str(config["MLP_irreps"]) == "16x0e+16x1o":
+        size_mlp = 1
+    elif str(config["MLP_irreps"]) == "16x0e+16x1o+16x2e":
+        size_mlp = 2
+    else:
+        size_mlp = 0
 
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]
@@ -219,25 +232,27 @@ def run(input_model, output_model="_e3nn.model", device="cpu", return_model=True
         correlation,
         num_layers,
         use_reduced_cg,
+        size_mlp,
     )
 
     if return_model:
         return target_model
 
-    # Save model
     if isinstance(input_model, str):
         base = os.path.splitext(input_model)[0]
         output_model = f"{base}.{output_model}"
-    logging.warning(f"Saving E3nn model to {output_model}")
+    logging.warning(f"Saving CuEq model to {output_model}")
     torch.save(target_model, output_model)
     return None
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_model", help="Path to input CuEq model")
+    parser.add_argument("input_model", help="Path to input MACE model")
     parser.add_argument(
-        "--output_model", help="Path to output E3nn model", default="e3nn_model.pt"
+        "--output_model",
+        help="Path to output cuequivariance model",
+        default="cueq_model.pt",
     )
     parser.add_argument("--device", default="cpu", help="Device to use")
     parser.add_argument(

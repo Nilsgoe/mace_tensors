@@ -119,13 +119,17 @@ def load_foundations_elements(
     for i in range(2):  # Assuming 2 products modules
         print(i, model.products[i])
         max_range = max_L + 1 if i == 0 else 1
-        for j in range(max_range): # Assuming 3 contractions in symmetric_contractions
+        for j in range(max_range):  # Assuming 3 contractions in symmetric_contractions
             print(j, model.products[i].symmetric_contractions.contractions[j])
             print(indices_weights)
-            w = model_foundations.products[i].symmetric_contractions.contractions[j].weights_max
+            w = (
+                model_foundations.products[i]
+                .symmetric_contractions.contractions[j]
+                .weights_max
+            )
             print(w.shape)
             print(w.detach().cpu())
-            #print(model_foundations.products[i].symmetric_contractions.contractions[j].weights_max)#[indices_weights, :, :])
+            # print(model_foundations.products[i].symmetric_contractions.contractions[j].weights_max)#[indices_weights, :, :])
             exit()
             model.products[i].symmetric_contractions.contractions[j].weights_max = (
                 torch.nn.Parameter(

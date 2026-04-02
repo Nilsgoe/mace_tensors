@@ -330,8 +330,16 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
     if model.__class__.__name__ == "AtomicDielectricMACE":
         config["use_polarizability"] = model.use_polarizability
         config["only_dipole"] = False  # model.only_dipole
-        config["gate"] = torch.nn.functional.silu
+        config["gate"] = (
+            model.readouts[-1]  # pylint: disable=protected-access
+            .non_linearity._modules["acts"][0]
+            .f
+            if model.num_interactions.item() > 1
+            else None
+        )
+        #config["gate"] = torch.nn.functional.silu
         config["MLP_irreps"] = model_mlp_irreps
+    print("GATE:",config["gate"])
     return config
 
 

@@ -287,11 +287,17 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
         self.non_linearity = self.equivariant_nonlin
         self.irreps_nonlin = self.equivariant_nonlin.irreps_in.simplify()
         self.linear_1 = Linear(
-            irreps_in=irreps_in, irreps_out=self.irreps_nonlin, cueq_config=cueq_config
+            irreps_in=irreps_in,
+            irreps_out=self.irreps_nonlin,
+            internal_weights=True,
+            shared_weights=True,
+            cueq_config=cueq_config
         )
         self.linear_2 = Linear(
             irreps_in=self.hidden_irreps,
             irreps_out=self.irreps_out,
+            internal_weights=True,
+            shared_weights=True,
             cueq_config=cueq_config,
         )
 
