@@ -212,17 +212,7 @@ def run(input_model, output_model="_e3nn.model", device="cpu", return_model=True
     # Create new model without CuEq config
     logging.info("Creating new model without CuEq settings")
     target_model = source_model.__class__(**config)
-    print("FFFFFF",config["MLP_irreps"],len([i for i in config["MLP_irreps"]])-1)
     size_mlp=len([i for i in config["MLP_irreps"]])-1
-    #if str(config["MLP_irreps"]) == "16x0e":
-    #    size_mlp = 0
-    #elif str(config["MLP_irreps"]) == "16x0e+16x1o":
-    #    size_mlp = 1
-    #elif str(config["MLP_irreps"]) == "16x0e+16x1o+16x2e":
-    #    size_mlp = 2
-    #else:
-    #    size_mlp = 0
-    #print("DDDD\n",size_mlp,"\n")
 
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]

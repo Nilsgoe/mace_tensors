@@ -247,7 +247,6 @@ class LinearDipolePolarReadoutBlock(torch.nn.Module):
     ):
         super().__init__()
         if use_polarizability:
-            print("You will calculate the polarizability and dipole.")
             self.irreps_out = o3.Irreps("2x0e + 1x1o + 1x2e")
         else:
             raise ValueError(
@@ -279,7 +278,6 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
         super().__init__()
         self.hidden_irreps = MLP_irreps
         if use_polarizability:
-            print("You will calculate the polarizability and dipole.")
             self.irreps_out = o3.Irreps("2x0e + 1x1o + 1x2e")
         else:
             raise ValueError(
@@ -293,7 +291,6 @@ class NonLinearDipolePolarReadoutBlock(torch.nn.Module):
         irreps_gated = o3.Irreps(
             [(mul, ir) for mul, ir in MLP_irreps if ir.l > 0 and ir in self.irreps_out]
         )
-        print("GGGGGGGGGG",gate)
         irreps_gates = o3.Irreps([mul, "0e"] for mul, _ in irreps_gated)
         self.equivariant_nonlin = nn.Gate(
             irreps_scalars=irreps_scalars,

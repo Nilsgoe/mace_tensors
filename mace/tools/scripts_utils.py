@@ -317,7 +317,6 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
             else None
         )
         config["atomic_energies"] = model.atomic_energies_fn.atomic_energies.cpu().numpy()
-        print("BBBB",model.atomic_energies_fn.atomic_energies.cpu().numpy())
         config["atomic_inter_scale"] = scale.cpu().numpy()
         config["atomic_inter_shift"] = shift.cpu().numpy()
         config["MLP_irreps"] = (
@@ -343,7 +342,6 @@ def extract_config_mace_model(model: torch.nn.Module) -> Dict[str, Any]:
         #    else None
         #)
         config["MLP_irreps"] = model_mlp_irreps
-        print("Gate", config["gate"])
     return config
 
 

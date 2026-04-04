@@ -147,7 +147,6 @@ def transfer_weights(
     remaining_keys = {k for k in remaining_keys if "symmetric_contraction" not in k}
     if remaining_keys:
         for key in remaining_keys:
-            print("KEY:",key)
             src = source_dict[key]
             tgt = target_dict[key]
             if source_dict[key].shape == target_dict[key].shape:
@@ -213,29 +212,6 @@ def run(
     target_model = source_model.__class__(**config).to(device)
     
     size_mlp=len([irreps for irreps in config["MLP_irreps"]]) - 1
-    print("RRRR",size_mlp,config["MLP_irreps"])
-    print("Source",source_model)
-    print("target",target_model)
-    torch.set_printoptions(threshold=torch.inf)
-    print("\n #################################################### \n")
-    #print("SOURCE linear_1 weight:")
-    #print(source_model.readouts[-1].linear_1.weight)
-
-    #print("SOURCE linear_2 weight:")
-    #print(source_model.readouts[-1].linear_2.weight)
-    print("SOURCE equi_nonlin_weight:")
-    #print(source_model.readouts[-1].equivariant_nonlin.weight)
-    print(source_model.readouts[-1].equivariant_nonlin)
-    print(source_model.readouts[-1].equivariant_nonlin.act_scalars)
-    print(source_model.readouts[-1].equivariant_nonlin.act_gates)
-    # Target
-    #print("TARGET linear_1 weight:")
-    #print(target_model.readouts[-1].linear_1.weight)
-
-    #print("TARGET linear_2 weight:")
-    #print(target_model.readouts[-1].linear_2.weight)
-    #print("TARGET equi_nonlin_weight:")
-    #print(target_model.readouts[-1].equivariant_nonlin.weight)
     # Transfer weights with proper remapping
     num_layers = config["num_interactions"]
     transfer_weights(
@@ -247,16 +223,6 @@ def run(
         use_reduced_cg,
         size_mlp,
     )
-    #print("TARGET linear_1 weight:")
-    #print(target_model.readouts[-1].linear_1.weight)
-
-    #print("TARGET linear_2 weight:")
-    #print(target_model.readouts[-1].linear_2.weight)
-    print("TARGET equi_nonlin_weight:")
-    print(target_model.readouts[-1].equivariant_nonlin)
-    print(target_model.readouts[-1].equivariant_nonlin.act_scalars)
-    print(target_model.readouts[-1].equivariant_nonlin.act_gates)
-   
     source_model.eval()
     target_model.eval()
      
@@ -303,19 +269,13 @@ def run(
     z_tgt = readout_tgt.linear_1(x_tgt)
     z_tgt_cmp = nonlin_to_mul_ir(z_tgt) if nonlin_to_mul_ir is not None else z_tgt
 
-    print("linear_1 max |Δ|:", (z_src - z_tgt_cmp).abs().max().item())
-
     g_src = readout_src.equivariant_nonlin(z_src)
     g_tgt = readout_tgt.equivariant_nonlin(z_tgt_cmp)
-
-    print("Gate max |Δ|:", (g_src - g_tgt).abs().max().item())
 
     g_tgt_linear = hidden_to_ir_mul(g_tgt) if hidden_to_ir_mul is not None else g_tgt
     y_src = readout_src.linear_2(g_src)
     y_tgt = readout_tgt.linear_2(g_tgt_linear)
     y_tgt_cmp = out_to_mul_ir(y_tgt) if out_to_mul_ir is not None else y_tgt
-
-    print("Full readout max |Δ|:", (y_src - y_tgt_cmp).abs().max().item())
 
     gate_dim = readout_src.irreps_nonlin.dim
     z = torch.randn(1, gate_dim, dtype=x.dtype, device=x.device)
@@ -323,20 +283,11 @@ def run(
     g_src = readout_src.equivariant_nonlin(z)
     g_tgt = readout_tgt.equivariant_nonlin(z)
 
-    print("Gate-only max |Δ|:", (g_src - g_tgt).abs().max().item())
-
     g_tgt_linear = hidden_to_ir_mul(g_tgt) if hidden_to_ir_mul is not None else g_tgt
     y_src = readout_src.linear_2(g_src)
     y_tgt = readout_tgt.linear_2(g_tgt_linear)
     y_tgt_cmp = out_to_mul_ir(y_tgt) if out_to_mul_ir is not None else y_tgt
 
-    print("Gate+l2 max |Δ|:", (y_src - y_tgt_cmp).abs().max().item())
-
-    #print("Weight comparison:\n",source_model.readouts[-1].linear_1.weight - target_model.readouts[-1].linear_1.weight)
-    #print(torch.isclose(target_model.readouts[-1].linear_1.weight,source_model.readouts[-1].linear_1.weight))
-
-
-    #print(target_model.readouts[-1].equivariant_nonlin.weight)
     if return_model:
         return target_model
 
