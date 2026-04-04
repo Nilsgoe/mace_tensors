@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple, Union
 import torch
 from e3nn import o3
 
-from mace.modules.wrapper_ops import CuEquivarianceConfig
+from mace.modules.wrapper_ops import CuEquivarianceConfig, TransposeIrrepsLayoutWrapper
 from mace.tools.cg import O3_e3nn
 from mace.tools.cg_cueq_tools import symmetric_contraction_proj
 from mace.tools.scripts_utils import extract_config_mace_model
@@ -271,20 +271,51 @@ def run(
     # move to correct device
     x = x.to(next(source_model.parameters()).device)
 
+    cueq_config = config["cueq_config"]
+
+    in_to_ir_mul = TransposeIrrepsLayoutWrapper(
+        readout_src.linear_1.irreps_in,
+        source="mul_ir",
+        target="ir_mul",
+        cueq_config=cueq_config,
+    )
+    nonlin_to_mul_ir = TransposeIrrepsLayoutWrapper(
+        readout_src.irreps_nonlin,
+        source="ir_mul",
+        target="mul_ir",
+        cueq_config=cueq_config,
+    )
+    hidden_to_ir_mul = TransposeIrrepsLayoutWrapper(
+        readout_src.hidden_irreps,
+        source="mul_ir",
+        target="ir_mul",
+        cueq_config=cueq_config,
+    )
+    out_to_mul_ir = TransposeIrrepsLayoutWrapper(
+        readout_src.linear_2.irreps_out,
+        source="ir_mul",
+        target="mul_ir",
+        cueq_config=cueq_config,
+    )
+
+    x_tgt = in_to_ir_mul(x) if in_to_ir_mul is not None else x
     z_src = readout_src.linear_1(x)
-    z_tgt = readout_tgt.linear_1(x)
+    z_tgt = readout_tgt.linear_1(x_tgt)
+    z_tgt_cmp = nonlin_to_mul_ir(z_tgt) if nonlin_to_mul_ir is not None else z_tgt
 
-    print("linear_1 max |Δ|:", (z_src - z_tgt).abs().max().item())
-    
+    print("linear_1 max |Δ|:", (z_src - z_tgt_cmp).abs().max().item())
+
     g_src = readout_src.equivariant_nonlin(z_src)
-    g_tgt = readout_tgt.equivariant_nonlin(z_tgt)
+    g_tgt = readout_tgt.equivariant_nonlin(z_tgt_cmp)
 
-    print("Gate max |Δ|:", (g_src - g_tgt).abs().max().item()) 
+    print("Gate max |Δ|:", (g_src - g_tgt).abs().max().item())
 
+    g_tgt_linear = hidden_to_ir_mul(g_tgt) if hidden_to_ir_mul is not None else g_tgt
     y_src = readout_src.linear_2(g_src)
-    y_tgt = readout_tgt.linear_2(g_tgt)
+    y_tgt = readout_tgt.linear_2(g_tgt_linear)
+    y_tgt_cmp = out_to_mul_ir(y_tgt) if out_to_mul_ir is not None else y_tgt
 
-    print("Full readout max |Δ|:", (y_src - y_tgt).abs().max().item())
+    print("Full readout max |Δ|:", (y_src - y_tgt_cmp).abs().max().item())
 
     gate_dim = readout_src.irreps_nonlin.dim
     z = torch.randn(1, gate_dim, dtype=x.dtype, device=x.device)
@@ -294,10 +325,12 @@ def run(
 
     print("Gate-only max |Δ|:", (g_src - g_tgt).abs().max().item())
 
+    g_tgt_linear = hidden_to_ir_mul(g_tgt) if hidden_to_ir_mul is not None else g_tgt
     y_src = readout_src.linear_2(g_src)
-    y_tgt = readout_tgt.linear_2(g_tgt)
+    y_tgt = readout_tgt.linear_2(g_tgt_linear)
+    y_tgt_cmp = out_to_mul_ir(y_tgt) if out_to_mul_ir is not None else y_tgt
 
-    print("Gate+l2 max |Δ|:", (y_src - y_tgt).abs().max().item())
+    print("Gate+l2 max |Δ|:", (y_src - y_tgt_cmp).abs().max().item())
 
     #print("Weight comparison:\n",source_model.readouts[-1].linear_1.weight - target_model.readouts[-1].linear_1.weight)
     #print(torch.isclose(target_model.readouts[-1].linear_1.weight,source_model.readouts[-1].linear_1.weight))

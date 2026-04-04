@@ -9,6 +9,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 from e3nn import o3
+import numpy as np
 
 from mace import data, modules, tools
 from mace.cli.convert_cueq_e3nn import run as run_cueq_to_e3nn
@@ -216,6 +217,87 @@ class TestCueq(BackendTestBase):
     @pytest.fixture(params=(["cuda"] if CUDA_AVAILABLE else ["cpu"]))
     def device(self, request):
         return request.param
+
+
+@pytest.mark.skipif(not CUET_AVAILABLE, reason="cuequivariance not installed")
+def test_atomic_dielectric_cueq_roundtrip_cpu():
+    torch.set_default_dtype(torch.float64)
+    table = tools.AtomicNumberTable([1, 8])
+
+    model_config = dict(
+        r_max=5.0,
+        num_bessel=8,
+        num_polynomial_cutoff=5,
+        max_ell=2,
+        interaction_cls=modules.interaction_classes[
+            "RealAgnosticResidualInteractionBlock"
+        ],
+        interaction_cls_first=modules.interaction_classes[
+            "RealAgnosticResidualInteractionBlock"
+        ],
+        num_interactions=2,
+        num_elements=2,
+        hidden_irreps=o3.Irreps("16x0e + 16x1o + 16x2e"),
+        MLP_irreps=o3.Irreps("16x0e + 16x1o + 16x2e"),
+        gate=F.silu,
+        atomic_energies=None,
+        avg_num_neighbors=3.0,
+        atomic_numbers=table.zs,
+        correlation=3,
+        radial_type="bessel",
+    )
+
+    config = data.Configuration(
+        atomic_numbers=np.array([8, 1, 1]),
+        positions=np.array(
+            [
+                [0.0, -2.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ]
+        ),
+        properties={
+            "forces": np.zeros((3, 3)),
+            "energy": -1.5,
+            "charges": np.array([-2.0, 1.0, 1.0]),
+            "dipole": np.array([-1.5, 1.5, 2.0]),
+            "polarizability": np.eye(3),
+        },
+        property_weights={
+            "forces": 1.0,
+            "energy": 1.0,
+            "charges": 1.0,
+            "dipole": 1.0,
+            "polarizability": 1.0,
+        },
+    )
+
+    atomic_data = data.AtomicData.from_config(config, z_table=table, cutoff=3.0)
+    data_loader = torch_geometric.dataloader.DataLoader(
+        dataset=[atomic_data],
+        batch_size=1,
+        shuffle=False,
+        drop_last=False,
+    )
+    batch = next(iter(data_loader)).to("cpu").to_dict()
+
+    torch.manual_seed(42)
+    model_e3nn = modules.AtomicDielectricMACE(**model_config).to("cpu")
+    model_cueq = run_e3nn_to_cueq(deepcopy(model_e3nn), device="cpu").to("cpu")
+    model_e3nn_back = run_cueq_to_e3nn(deepcopy(model_cueq), device="cpu").to("cpu")
+
+    out_e3nn = model_e3nn(deepcopy(batch), training=True)
+    out_cueq = model_cueq(deepcopy(batch), training=True)
+    out_e3nn_back = model_e3nn_back(deepcopy(batch), training=True)
+
+    torch.testing.assert_close(out_e3nn["dipole"], out_cueq["dipole"])
+    torch.testing.assert_close(out_cueq["dipole"], out_e3nn_back["dipole"])
+    torch.testing.assert_close(
+        out_e3nn["polarizability"], out_cueq["polarizability"]
+    )
+    torch.testing.assert_close(
+        out_cueq["polarizability"], out_e3nn_back["polarizability"]
+    )
 
 
 @pytest.mark.skipif(not OEQ_AVAILABLE, reason="openequivariance not installed")
